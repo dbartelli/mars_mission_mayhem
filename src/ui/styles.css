@@ -26,30 +26,38 @@ body {
   padding: 14px;
   box-shadow: var(--glow);
 }
-#console { flex: 1; overflow-y: auto; white-space: pre-wrap; }
+#console { flex: 1; overflow-y: auto; white-space: pre-wrap; min-height: 120px; }
 #console .room { color: var(--rust-light); font-weight: bold; }
 #console .you { color: var(--good); }
 #console p { margin: 0 0 10px; }
-#inputRow { display: flex; gap: 8px; margin-top: 10px; position: relative; }
-#input {
-  flex: 1; font-size: 1.1rem; padding: 10px; border-radius: 8px;
-  border: 2px solid var(--rust); background: #160b08; color: var(--text);
+#commands {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 45vh;
+  overflow-y: auto;
 }
-#help-btn, #input-go {
-  border: none; border-radius: 8px; padding: 0 14px; font-size: 1.2rem;
-  background: var(--rust); color: white; cursor: pointer;
+.cmd-section {
+  background: var(--panel);
+  border: 2px solid var(--rust);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: var(--glow);
 }
-#suggest {
-  position: absolute; bottom: 52px; left: 0; background: #160b08;
-  border: 1px solid var(--rust); border-radius: 8px; display: none; z-index: 5;
+.cmd-section h3 { margin: 0 0 6px; color: var(--rust-light); font-size: 0.9rem; }
+.cmd-section button {
+  margin: 3px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--rust-light);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
 }
-#suggest div { padding: 6px 12px; cursor: pointer; }
-#suggest div.active, #suggest div:hover { background: var(--rust); }
+.cmd-section button:hover { background: var(--rust); color: white; }
 #panel { flex: 1; min-height: 180px; }
-#exits button, #objects button {
-  margin: 4px; padding: 6px 10px; border-radius: 16px; border: 1px solid var(--rust-light);
-  background: transparent; color: var(--text); cursor: pointer;
-}
 #minimap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .cell { text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 0.8rem; background: #160b08; color: var(--dim); }
 .cell.here { background: var(--rust); color: white; box-shadow: var(--glow); }
@@ -61,3 +69,4 @@ body {
 }
 .symbol.picked { background: var(--rust); box-shadow: var(--glow); }
 h3 { margin: 0 0 8px; color: var(--rust-light); }
+.about { font-size: 0.75rem; color: var(--dim); text-align: center; padding: 10px; }
