@@ -52,7 +52,6 @@ export function renderObjects(state, onCommand) {
   box.innerHTML = '<h3>Look at</h3>';
   const room = getRoom(state.room);
   for (const id of room.items || []) {
-    const item = getRoom ? room && id : id;
     const b = document.createElement('button');
     const { getItem } = window.__mmm || {};
     const name = getItem ? getItem(id).name : id;
