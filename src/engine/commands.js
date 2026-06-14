@@ -77,6 +77,14 @@ export function cmdTake(state, noun) {
   if (!(room.items || []).includes(id)) return "You don't see that here.";
   room.items = room.items.filter((x) => x !== id);
   addItem(state, id);
+  if (id === 'sharpTool') {
+    state.flags.slice1Complete = true;
+    return (
+      'You pick up the sharp tool. Heavy FOOTSTEPS echo behind you — a second alien enters, sees the tool ' +
+      'in your hand, and bares its teeth. Combat begins!\n\n' +
+      '*** To be continued in the next chapter... ***'
+    );
+  }
   return `You take the ${item.name}.`;
 }
 
@@ -158,9 +166,22 @@ export function cmdEnter(state, words = []) {
   return vaultEnter(state, words);
 }
 
+const VAULT_CODE = 'blue 4';
+
 // Placeholder until Task 10 fills it in; defined now to keep imports valid.
-export function vaultEnter() {
-  return 'There is nothing to enter here.';
+export function vaultEnter(state, words = []) {
+  if (state.room !== 'vault') return 'There is nothing to enter here.';
+  if (state.flags.vaultOpen) return 'The vault is already open.';
+  const attempt = words.join(' ').trim();
+  if (attempt === VAULT_CODE) {
+    state.flags.vaultOpen = true;
+    const room = getRoom('vault');
+    room.items = room.items || [];
+    if (!room.items.includes('crystal')) room.items.push('crystal');
+    if (!room.items.includes('sharpTool')) room.items.push('sharpTool');
+    return 'The terminal beeps green and the STEEL DOOR slides open! Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.';
+  }
+  return 'The terminal buzzes — wrong code. Check your NOTES for the access code.';
 }
 
 const ACCESS_CODE_NOTE = { title: 'Vault Access Code', text: 'blue 4' };
