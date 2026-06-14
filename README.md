@@ -18,4 +18,4 @@ updated `index.html`.**
 ## Deploy (GitHub Pages)
 1. Push to the `main` branch of a public repo named `mars-mission-mayhem`.
 2. Repo Settings → Pages → Source: `main` branch (root) → Save.
-3. Play at `https://<username>.github.io/mars-mission-mayhem/`.
+3. Play at `https://dbartelli.github.io/mars-mission-mayhem/`.

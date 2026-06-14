@@ -275,7 +275,7 @@ const items = {
   },
   vaultTerminal: {
     id: 'vaultTerminal', name: 'vault terminal', aliases: ['terminal', 'panel'], takeable: false,
-    description: 'A second terminal that controls the steel door. Check your NOTES for the code, then use the "Enter vault code" button.',
+    description: 'A second terminal that controls the steel door. Use the CODE TABLET from your backpack to enter the code.',
   },
   steelDoor: {
     id: 'steelDoor', name: 'steel door', aliases: ['door'], takeable: false,
@@ -340,7 +340,6 @@ function createInitialState() {
     room: 'cockpit',
     inventory: [],
     flags: {},
-    notes: [],
     visited: ['cockpit'],
     puzzles: { symbolLogin: { attempt: [] } },
   };
@@ -356,10 +355,6 @@ function addItem(state, id) {
 
 function removeItem(state, id) {
   state.inventory = state.inventory.filter((x) => x !== id);
-}
-
-function addNote(state, note) {
-  if (!state.notes.some((n) => n.title === note.title)) state.notes.push(note);
 }
 
 function visit(state, roomId) {
@@ -642,6 +637,11 @@ function cmdUse(state, noun, noun2) {
     return cmdPry(state, 'trapdoor');
   }
 
+  if (id === 'codeTablet') {
+    if (state.room === 'vault') return vaultEnter(state, ['blue', '4']);
+    return 'The tablet shows the vault access code: "blue 4".';
+  }
+
   return `You can't use the ${getItem(id).name} like that.`;
 }
 
@@ -691,14 +691,12 @@ function vaultEnter(state, words = []) {
     if (!room.items.includes('sharpTool')) room.items.push('sharpTool');
     return 'The terminal beeps green and the STEEL DOOR slides open! Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.';
   }
-  return 'The terminal buzzes — wrong code. Check your NOTES for the access code.';
+  return 'The terminal buzzes — wrong code. Check the CODE TABLET in your backpack.';
 }
-
-const ACCESS_CODE_NOTE = { title: 'Vault Access Code', text: 'blue 4' };
 
 function grantAccessCode(state) {
   state.flags.hasAccessCode = true;
-  addNote(state, ACCESS_CODE_NOTE);
+  addItem(state, 'codeTablet');
 }
 
 function cmdHide(state) {
@@ -707,8 +705,7 @@ function cmdHide(state) {
   grantAccessCode(state);
   return (
     'You slip into the alcove and hold your breath. The patrol alien clomps past, taps a code into a ' +
-    'panel, and sets a CODE TABLET on the bench before leaving. You sneak out and read it: the access code is "blue 4". ' +
-    '(Saved to your NOTES.) The way NORTH is clear.'
+    'panel, and drops a CODE TABLET on the bench before leaving. You sneak out and grab it — the way to the VAULT is clear!'
   );
 }
 
@@ -723,7 +720,7 @@ function cmdAttack(state, noun, noun2) {
     grantAccessCode(state);
     return (
       'You bonk the patrol alien with the wrench and it crumples in a heap! You grab its CODE TABLET — ' +
-      'the access code is "blue 4". (Saved to your NOTES.) You win! The way NORTH is clear.'
+      'you grab its CODE TABLET! The way to the VAULT is clear!'
     );
   }
 
@@ -791,7 +788,7 @@ function currentGate(state) {
       hints: [
         'Go to the VAULT and use the terminal.',
         'Check your NOTES for the access code.',
-        'Check your NOTES for the code, then click "Enter vault code" in the Use section.',
+        'Check the CODE TABLET in your backpack for the code, then click "Enter vault code" in the Use section.',
       ],
     };
   }
@@ -857,7 +854,6 @@ function clearState(storage = defaultStorage()) {
 
 
 
-
 const HELP_TEXT =
   'Use the buttons to play: GO moves you between rooms, LOOK AT examines things, ' +
   'TAKE picks up items, and BACKPACK lets you use what you\'re carrying. ' +
@@ -870,16 +866,11 @@ function createGame() {
   const isNewGame = !saved || !saved.room;
   if (!isNewGame) Object.assign(state, saved);
 
-  function notes() {
-    if (state.notes.length === 0) return 'Your notebook is empty so far.';
-    return 'NOTES:\n' + state.notes.map((n) => `• ${n.title}: ${n.text}`).join('\n');
-  }
-
   function handle(input) {
     const p = parse(input, vocab);
     let out;
     if (!p.verb) {
-      out = "I'm not sure what you mean. Type HELP or ? for ideas.";
+      out = "I'm not sure what you mean. Click 'How to play' for help.";
     } else {
       out = dispatch(p);
     }
@@ -891,7 +882,7 @@ function createGame() {
     switch (p.verb) {
       case 'look': return p.noun ? cmdExamine(state, p.noun) : describeRoom(state);
       case 'examine': return cmdExamine(state, p.noun);
-      case 'go': return p.noun ? cmdGo(state, p.noun) : 'Go where? Try N, S, E, W, UP or DOWN.';
+      case 'go': return p.noun ? cmdGo(state, p.noun) : 'Use the GO buttons to move between rooms.';
       case 'take': return cmdTake(state, p.noun);
       case 'drop': return cmdDrop(state, p.noun);
       case 'inventory': return cmdInventory(state);
@@ -908,9 +899,8 @@ function createGame() {
       case 'hide': return cmdHide(state);
       case 'attack': return cmdAttack(state, p.noun, p.noun2);
       case 'talk': return cmdTalk(state, p.noun);
-      case 'notes': return notes();
-      case 'help': return getHint(state) + '\n\n' + HELP_TEXT;
-      default: return "I don't know how to do that. Type HELP or ?.";
+      case 'help': return HELP_TEXT;
+      default: return "I don't know how to do that. Click 'How to play' for help.";
     }
   }
 
@@ -1113,8 +1103,7 @@ function boot() {
 
     // HELP + NOTES (always visible)
     const helpSec = makeSection('❓ Help');
-    helpSec.appendChild(makeBtn('Get a hint', () => runCommand('help')));
-    helpSec.appendChild(makeBtn('📋 My notes', () => runCommand('notes')));
+    helpSec.appendChild(makeBtn('How to play', () => runCommand('help')));
     box.appendChild(helpSec);
 
     // CONTEXT: corridor actions (only when alien present)
@@ -1136,7 +1125,7 @@ function boot() {
       actions.push({ label: 'Pry trapdoor open', cmd: 'pry trapdoor' });
     if (state.room === 'cockpit' && !state.flags.lockerOpen)
       actions.push({ label: 'Open storage locker', cmd: 'use locker' });
-    if (state.room === 'vault' && !state.flags.vaultOpen && state.flags.hasAccessCode)
+    if (state.room === 'vault' && !state.flags.vaultOpen && state.inventory.includes('codeTablet'))
       actions.push({ label: 'Enter vault code', cmd: 'enter blue 4' });
     return actions;
   }

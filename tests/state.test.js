@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createInitialState, hasItem, addItem, removeItem, addNote, visit,
+  createInitialState, hasItem, addItem, removeItem, visit,
 } from '../src/engine/state.js';
 
 describe('state', () => {
@@ -22,11 +22,8 @@ describe('state', () => {
     expect(hasItem(s, 'wrench')).toBe(false);
   });
 
-  it('adds notes once and records visited rooms once', () => {
+  it('records visited rooms once without duplicates', () => {
     const s = createInitialState();
-    addNote(s, { title: 'Access Code', text: 'blue 4' });
-    addNote(s, { title: 'Access Code', text: 'blue 4' });
-    expect(s.notes).toHaveLength(1);
     visit(s, 'surface');
     visit(s, 'surface');
     expect(s.visited).toEqual(['cockpit', 'surface']);

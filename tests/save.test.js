@@ -13,7 +13,7 @@ function fakeStorage() {
 describe('save/load', () => {
   it('round-trips state through storage', () => {
     const store = fakeStorage();
-    const state = { room: 'vault', inventory: ['crystal'], flags: { vaultOpen: true }, notes: [], visited: ['cockpit'], puzzles: {} };
+    const state = { room: 'vault', inventory: ['crystal'], flags: { vaultOpen: true }, visited: ['cockpit'], puzzles: {} };
     saveState(state, store);
     const loaded = loadState(store);
     expect(loaded.room).toBe('vault');

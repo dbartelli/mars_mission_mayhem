@@ -45,12 +45,12 @@ describe('full slice-1 walkthrough', () => {
     expect(game.state.flags.slice1Complete).toBe(true);
   });
 
-  it('NOTES shows the access code after the patrol beat', () => {
+  it('hiding in the corridor puts a code tablet in your backpack', () => {
     const game = createGame();
     game.state.room = 'corridor';
     game.state.flags.loggedIn = true;
     game.handle('hide');
-    expect(game.handle('notes').toLowerCase()).toContain('blue 4');
+    expect(game.state.inventory).toContain('codeTablet');
   });
 
   it('unknown commands are handled kindly', () => {

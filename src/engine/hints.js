@@ -48,7 +48,7 @@ function currentGate(state) {
       hints: [
         'Go to the VAULT and use the terminal.',
         'Check your NOTES for the access code.',
-        'Check your NOTES for the code, then click "Enter vault code" in the Use section.',
+        'Check the CODE TABLET in your backpack for the code, then click "Enter vault code" in the Use section.',
       ],
     };
   }

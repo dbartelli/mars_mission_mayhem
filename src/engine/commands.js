@@ -1,5 +1,5 @@
 import { rooms, items, getRoom, getItem } from '../data/world.js';
-import { hasItem, addItem, removeItem, addNote, visit } from './state.js';
+import { hasItem, addItem, removeItem, visit } from './state.js';
 import { SYMBOL_PUZZLE, checkSymbolOrder } from '../data/puzzles.js';
 
 function text(val, state) {
@@ -146,6 +146,11 @@ export function cmdUse(state, noun, noun2) {
     return cmdPry(state, 'trapdoor');
   }
 
+  if (id === 'codeTablet') {
+    if (state.room === 'vault') return vaultEnter(state, ['blue', '4']);
+    return 'The tablet shows the vault access code: "blue 4".';
+  }
+
   return `You can't use the ${getItem(id).name} like that.`;
 }
 
@@ -195,14 +200,12 @@ export function vaultEnter(state, words = []) {
     if (!room.items.includes('sharpTool')) room.items.push('sharpTool');
     return 'The terminal beeps green and the STEEL DOOR slides open! Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.';
   }
-  return 'The terminal buzzes — wrong code. Check your NOTES for the access code.';
+  return 'The terminal buzzes — wrong code. Check the CODE TABLET in your backpack.';
 }
-
-const ACCESS_CODE_NOTE = { title: 'Vault Access Code', text: 'blue 4' };
 
 function grantAccessCode(state) {
   state.flags.hasAccessCode = true;
-  addNote(state, ACCESS_CODE_NOTE);
+  addItem(state, 'codeTablet');
 }
 
 export function cmdHide(state) {
@@ -211,8 +214,7 @@ export function cmdHide(state) {
   grantAccessCode(state);
   return (
     'You slip into the alcove and hold your breath. The patrol alien clomps past, taps a code into a ' +
-    'panel, and sets a CODE TABLET on the bench before leaving. You sneak out and read it: the access code is "blue 4". ' +
-    '(Saved to your NOTES.) The way NORTH is clear.'
+    'panel, and drops a CODE TABLET on the bench before leaving. You sneak out and grab it — the way to the VAULT is clear!'
   );
 }
 
@@ -227,7 +229,7 @@ export function cmdAttack(state, noun, noun2) {
     grantAccessCode(state);
     return (
       'You bonk the patrol alien with the wrench and it crumples in a heap! You grab its CODE TABLET — ' +
-      'the access code is "blue 4". (Saved to your NOTES.) You win! The way NORTH is clear.'
+      'you grab its CODE TABLET! The way to the VAULT is clear!'
     );
   }
 

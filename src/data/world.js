@@ -178,7 +178,7 @@ export const items = {
   },
   vaultTerminal: {
     id: 'vaultTerminal', name: 'vault terminal', aliases: ['terminal', 'panel'], takeable: false,
-    description: 'A second terminal that controls the steel door. Check your NOTES for the code, then use the "Enter vault code" button.',
+    description: 'A second terminal that controls the steel door. Use the CODE TABLET from your backpack to enter the code.',
   },
   steelDoor: {
     id: 'steelDoor', name: 'steel door', aliases: ['door'], takeable: false,

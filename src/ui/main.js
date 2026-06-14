@@ -95,8 +95,7 @@ function boot() {
 
     // HELP + NOTES (always visible)
     const helpSec = makeSection('❓ Help');
-    helpSec.appendChild(makeBtn('Get a hint', () => runCommand('help')));
-    helpSec.appendChild(makeBtn('📋 My notes', () => runCommand('notes')));
+    helpSec.appendChild(makeBtn('How to play', () => runCommand('help')));
     box.appendChild(helpSec);
 
     // CONTEXT: corridor actions (only when alien present)
@@ -118,7 +117,7 @@ function boot() {
       actions.push({ label: 'Pry trapdoor open', cmd: 'pry trapdoor' });
     if (state.room === 'cockpit' && !state.flags.lockerOpen)
       actions.push({ label: 'Open storage locker', cmd: 'use locker' });
-    if (state.room === 'vault' && !state.flags.vaultOpen && state.flags.hasAccessCode)
+    if (state.room === 'vault' && !state.flags.vaultOpen && state.inventory.includes('codeTablet'))
       actions.push({ label: 'Enter vault code', cmd: 'enter blue 4' });
     return actions;
   }

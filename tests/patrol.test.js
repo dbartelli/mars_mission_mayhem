@@ -14,7 +14,7 @@ describe('patrol beat', () => {
     const s = inCorridor();
     const out = cmdHide(s);
     expect(s.flags.hasAccessCode).toBe(true);
-    expect(s.notes.some((n) => /code/i.test(n.title))).toBe(true);
+    expect(s.inventory).toContain('codeTablet');
     expect(out.toLowerCase()).toContain('code');
   });
 
@@ -23,7 +23,7 @@ describe('patrol beat', () => {
     addItem(s, 'wrench');
     const out = cmdAttack(s, 'alien', 'wrench');
     expect(s.flags.hasAccessCode).toBe(true);
-    expect(out.toLowerCase()).toContain('win');
+    expect(out.toLowerCase()).toContain('tablet');
   });
 
   it('combat without a weapon is a safe nudge, not a loss', () => {

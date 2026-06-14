@@ -22,7 +22,7 @@ describe('vault', () => {
     const s = inVault();
     const wrong = cmdEnter(s, ['red', '9']);
     expect(s.flags.vaultOpen).toBeFalsy();
-    expect(wrong.toLowerCase()).toContain('notes');
+    expect(wrong.toLowerCase()).toContain('tablet');
     const right = cmdEnter(s, ['blue', '4']);
     expect(s.flags.vaultOpen).toBe(true);
     expect(right.toLowerCase()).toContain('crystal');
