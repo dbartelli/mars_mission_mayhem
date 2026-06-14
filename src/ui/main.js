@@ -2,7 +2,7 @@ import { createGame } from '../engine/game.js';
 import { clearState } from '../engine/save.js';
 import { nounVocab, getItem } from '../data/world.js';
 import { availableExits } from '../engine/commands.js';
-import { appendLine, renderMinimap, renderExits } from './render.js';
+import { appendLine, renderMinimap } from './render.js';
 import { suggest, applySuggestion } from './autocomplete.js';
 import { renderPanel } from './panel.js';
 
@@ -20,26 +20,9 @@ function boot() {
 
   function refresh() {
     renderMinimap(game.state);
-    renderExits(availableExits(game.state), runCommand);
-    renderObjectsRow();
     renderPanel(game.state, runCommand);
   }
 
-  function renderObjectsRow() {
-    const box = document.getElementById('objects');
-    box.innerHTML = '<h3>Look at</h3>';
-    const ids = gameRoomItems();
-    for (const id of ids) {
-      const name = getItem(id).name;
-      const b = document.createElement('button');
-      b.textContent = name;
-      b.onclick = () => runCommand(`examine ${name}`);
-      box.appendChild(b);
-    }
-  }
-  function gameRoomItems() {
-    return window.__mmm.roomItems ? window.__mmm.roomItems(game.state.room) : [];
-  }
 
   function runCommand(cmd) {
     appendLine(`> ${cmd}`, 'you');
