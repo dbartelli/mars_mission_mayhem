@@ -52,12 +52,15 @@ function boot() {
     box.appendChild(goSec);
 
     // LOOK AT
-    const lookSec = makeSection('👁 Look at');
-    currentRoomItems().forEach((id) => {
-      const item = getItem(id);
-      if (item) lookSec.appendChild(makeBtn(item.name, () => runCommand(`examine ${item.name}`)));
-    });
-    box.appendChild(lookSec);
+    const roomIds = currentRoomItems();
+    if (roomIds.length > 0) {
+      const lookSec = makeSection('👁 Look at');
+      roomIds.forEach((id) => {
+        const item = getItem(id);
+        if (item) lookSec.appendChild(makeBtn(item.name, () => runCommand(`examine ${item.name}`)));
+      });
+      box.appendChild(lookSec);
+    }
 
     // TAKE (hidden when nothing takeable)
     const takeableIds = currentRoomItems().filter((id) => getItem(id)?.takeable);
@@ -71,12 +74,14 @@ function boot() {
     }
 
     // BACKPACK
-    const packSec = makeSection('🎒 Backpack');
-    state.inventory.forEach((id) => {
-      const item = getItem(id);
-      if (item) packSec.appendChild(makeBtn(item.name, () => runCommand(`use ${item.name}`)));
-    });
-    box.appendChild(packSec);
+    if (state.inventory.length > 0) {
+      const packSec = makeSection('🎒 Backpack');
+      state.inventory.forEach((id) => {
+        const item = getItem(id);
+        if (item) packSec.appendChild(makeBtn(item.name, () => runCommand(`use ${item.name}`)));
+      });
+      box.appendChild(packSec);
+    }
 
     // USE — context-smart, hidden when no actions apply
     const useActions = contextUseActions(state);
