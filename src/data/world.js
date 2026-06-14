@@ -104,7 +104,7 @@ export const rooms = {
       'A small room with a second VAULT TERMINAL and a thick STEEL DOOR. ' +
       (s.flags.vaultOpen
         ? 'The steel door has slid open. Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.'
-        : 'The steel door is locked. The terminal asks for an access code — try ENTER and your code.'),
+        : 'The steel door is locked. Use the VAULT TERMINAL to enter your access code.'),
     items: ['vaultTerminal', 'steelDoor'],
     exits: { back: 'corridor' },
   },
@@ -178,7 +178,7 @@ export const items = {
   },
   vaultTerminal: {
     id: 'vaultTerminal', name: 'vault terminal', aliases: ['terminal', 'panel'], takeable: false,
-    description: 'A second terminal that controls the steel door.',
+    description: 'A second terminal that controls the steel door. Check your NOTES for the code, then use the "Enter vault code" button.',
   },
   steelDoor: {
     id: 'steelDoor', name: 'steel door', aliases: ['door'], takeable: false,
