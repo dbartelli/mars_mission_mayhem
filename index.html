@@ -32,30 +32,38 @@ body {
   padding: 14px;
   box-shadow: var(--glow);
 }
-#console { flex: 1; overflow-y: auto; white-space: pre-wrap; }
+#console { flex: 1; overflow-y: auto; white-space: pre-wrap; min-height: 120px; }
 #console .room { color: var(--rust-light); font-weight: bold; }
 #console .you { color: var(--good); }
 #console p { margin: 0 0 10px; }
-#inputRow { display: flex; gap: 8px; margin-top: 10px; position: relative; }
-#input {
-  flex: 1; font-size: 1.1rem; padding: 10px; border-radius: 8px;
-  border: 2px solid var(--rust); background: #160b08; color: var(--text);
+#commands {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 45vh;
+  overflow-y: auto;
 }
-#help-btn, #input-go {
-  border: none; border-radius: 8px; padding: 0 14px; font-size: 1.2rem;
-  background: var(--rust); color: white; cursor: pointer;
+.cmd-section {
+  background: var(--panel);
+  border: 2px solid var(--rust);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: var(--glow);
 }
-#suggest {
-  position: absolute; bottom: 52px; left: 0; background: #160b08;
-  border: 1px solid var(--rust); border-radius: 8px; display: none; z-index: 5;
+.cmd-section h3 { margin: 0 0 6px; color: var(--rust-light); font-size: 0.9rem; }
+.cmd-section button {
+  margin: 3px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--rust-light);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
 }
-#suggest div { padding: 6px 12px; cursor: pointer; }
-#suggest div.active, #suggest div:hover { background: var(--rust); }
+.cmd-section button:hover { background: var(--rust); color: white; }
 #panel { flex: 1; min-height: 180px; }
-#exits button, #objects button {
-  margin: 4px; padding: 6px 10px; border-radius: 16px; border: 1px solid var(--rust-light);
-  background: transparent; color: var(--text); cursor: pointer;
-}
 #minimap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .cell { text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 0.8rem; background: #160b08; color: var(--dim); }
 .cell.here { background: var(--rust); color: white; box-shadow: var(--glow); }
@@ -67,25 +75,23 @@ body {
 }
 .symbol.picked { background: var(--rust); box-shadow: var(--glow); }
 h3 { margin: 0 0 8px; color: var(--rust-light); }
+.about { font-size: 0.75rem; color: var(--dim); text-align: center; padding: 10px; }
 </style>
 </head>
 <body>
   <div id="app">
     <div id="left" class="pane">
       <div id="console"></div>
-      <div id="inputRow">
-        <div id="suggest"></div>
-        <input id="input" autocomplete="off" placeholder="Type a command… (try LOOK or HELP)" />
-        <button id="input-go">▶</button>
-        <button id="help-btn">?</button>
-      </div>
+      <div id="commands"></div>
     </div>
     <div id="right">
       <div id="panel" class="pane"></div>
-      <div id="exits" class="pane"></div>
-      <div id="objects" class="pane"></div>
-      <div class="pane"><h3>Map</h3><div id="minimap"></div>
-        <button id="restart-btn" style="margin-top:10px">Restart</button></div>
+      <div class="pane">
+        <h3>Map</h3>
+        <div id="minimap"></div>
+        <button id="restart-btn" style="margin-top:10px">Restart</button>
+      </div>
+      <div class="pane about">Created June 2026 by Diego (and Claude)</div>
     </div>
   </div>
   <script type="module">// ===== src/data/world.js =====
@@ -95,15 +101,21 @@ const rooms = {
   cockpit: {
     id: 'cockpit',
     name: 'Crashed Cockpit',
-    description: (s) =>
-      (s.flags.visorFixed
-        ? 'Your visor is patched and holding. '
-        : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +
-      'A MISSION SCREEN flickers on the dashboard. ' +
-      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER' +
-      (s.flags.lockerOpen
-        ? ' (open — SUPER GLUE, WRENCH, and FIRST AID KIT inside).'
-        : ' (shut).'),
+    description: (s) => {
+      const base =
+        (s.flags.visorFixed
+          ? 'Your visor is patched and holding. '
+          : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +
+        'A MISSION SCREEN flickers on the dashboard. ' +
+        'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER';
+      if (!s.flags.lockerOpen) return base + ' (shut).';
+      const r = rooms.cockpit;
+      const inside = [];
+      if ((r.items || []).includes('sealant')) inside.push('SUPER GLUE');
+      if ((r.items || []).includes('wrench')) inside.push('WRENCH');
+      if ((r.items || []).includes('firstAidKit')) inside.push('FIRST AID KIT');
+      return base + (inside.length ? ` (open — ${inside.join(', ')} inside).` : ' (open — empty).');
+    },
     items: ['missionScreen', 'locker'],
     exits: {
       out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
@@ -206,9 +218,17 @@ const items = {
   },
   locker: {
     id: 'locker', name: 'storage locker', aliases: ['locker', 'cabinet', 'storage'], takeable: false,
-    description: (s) => s.flags.lockerOpen
-      ? 'An open storage locker. Inside you see SUPER GLUE, a WRENCH, and a FIRST AID KIT.'
-      : 'A wall-mounted storage locker, shut but not locked.',
+    description: (s) => {
+      if (!s.flags.lockerOpen) return 'A wall-mounted storage locker, shut but not locked.';
+      const r = rooms.cockpit;
+      const inside = [];
+      if ((r.items || []).includes('sealant')) inside.push('SUPER GLUE');
+      if ((r.items || []).includes('wrench')) inside.push('WRENCH');
+      if ((r.items || []).includes('firstAidKit')) inside.push('FIRST AID KIT');
+      return inside.length
+        ? `An open storage locker. Inside you see ${inside.join(', ')}.`
+        : 'An open storage locker. It is empty.';
+    },
   },
   sealant: {
     id: 'sealant', name: 'super glue', aliases: ['glue', 'tube', 'sealant', 'super'], takeable: true,
@@ -878,7 +898,12 @@ function createGame() {
       case 'read': return cmdRead(state, p.noun);
       case 'use': return cmdUse(state, p.noun, p.noun2);
       case 'pry': return cmdPry(state, p.noun);
-      case 'open': return (p.noun === 'trapdoor') ? cmdPry(state, 'trapdoor') : cmdUse(state, p.noun, p.noun2);
+      case 'open': {
+        if (state.room === 'cockpit' && p.noun && ['hatch', 'door', 'exit'].includes(p.noun))
+          return cmdGo(state, 'out');
+        if (['trapdoor', 'hatch', 'door'].includes(p.noun)) return cmdPry(state, p.noun);
+        return cmdUse(state, p.noun, p.noun2);
+      }
       case 'enter': return cmdEnter(state, p.words || []);
       case 'hide': return cmdHide(state);
       case 'attack': return cmdAttack(state, p.noun, p.noun2);
@@ -898,7 +923,6 @@ function createGame() {
 
 
 // ===== src/ui/render.js =====
-
 const MAP_LAYOUT = [
   ['surface', 'shaft', ''],
   ['cockpit', 'entryHall', 'terminalRoom'],
@@ -931,32 +955,6 @@ function renderMinimap(state) {
       if (state.room === id) cell.classList.add('here');
       map.appendChild(cell);
     }
-  }
-}
-
-function renderExits(exits, onCommand) {
-  const box = document.getElementById('exits');
-  box.innerHTML = '<h3>Go</h3>';
-  for (const dir of exits) {
-    const b = document.createElement('button');
-    b.textContent = dir.toUpperCase();
-    b.onclick = () => onCommand(`go ${dir}`);
-    box.appendChild(b);
-  }
-}
-
-function renderObjects(state, onCommand) {
-  const box = document.getElementById('objects');
-  if (!box) return;
-  box.innerHTML = '<h3>Look at</h3>';
-  const room = getRoom(state.room);
-  for (const id of room.items || []) {
-    const b = document.createElement('button');
-    const { getItem } = window.__mmm || {};
-    const name = getItem ? getItem(id).name : id;
-    b.textContent = name;
-    b.onclick = () => onCommand(`examine ${name}`);
-    box.appendChild(b);
   }
 }
 
@@ -1025,88 +1023,131 @@ function applySuggestion(input, word) {
 
 
 
-
-const VERBS = ['look', 'examine', 'go', 'take', 'drop', 'use', 'read', 'pry',
-  'hide', 'attack', 'talk', 'enter', 'inventory', 'notes', 'help', 'up', 'down', 'out', 'back', 'control', 'corridor', 'vault'];
-
 function boot() {
-  // expose item lookup for render helpers (merge — do NOT clobber roomItems set below)
-  window.__mmm = Object.assign(window.__mmm || {}, { getItem });
   const game = createGame();
-  const vocab = [...VERBS, ...nounVocab()];
-
-  const input = document.getElementById('input');
-  const suggestBox = document.getElementById('suggest');
-
-  function refresh() {
-    renderMinimap(game.state);
-    renderExits(availableExits(game.state), runCommand);
-    renderObjectsRow();
-    renderPanel(game.state, runCommand);
-  }
-
-  function renderObjectsRow() {
-    const box = document.getElementById('objects');
-    box.innerHTML = '<h3>Look at</h3>';
-    const ids = gameRoomItems();
-    for (const id of ids) {
-      const name = getItem(id).name;
-      const b = document.createElement('button');
-      b.textContent = name;
-      b.onclick = () => runCommand(`examine ${name}`);
-      box.appendChild(b);
-    }
-  }
-  function gameRoomItems() {
-    return window.__mmm.roomItems ? window.__mmm.roomItems(game.state.room) : [];
-  }
 
   function runCommand(cmd) {
     appendLine(`> ${cmd}`, 'you');
-    const out = game.handle(cmd);
-    appendLine(out);
+    appendLine(game.handle(cmd));
     refresh();
-    input.value = '';
-    hideSuggest();
   }
 
-  function hideSuggest() { suggestBox.style.display = 'none'; }
+  function refresh() {
+    renderMinimap(game.state);
+    renderCommands(game.state);
+    renderPanel(game.state, runCommand);
+  }
 
-  input.addEventListener('input', () => {
-    const matches = suggest(input.value, vocab);
-    if (matches.length === 0) return hideSuggest();
-    suggestBox.innerHTML = '';
-    matches.forEach((w) => {
-      const d = document.createElement('div');
-      d.textContent = w;
-      d.onclick = () => { input.value = applySuggestion(input.value, w); input.focus(); hideSuggest(); };
-      suggestBox.appendChild(d);
-    });
-    suggestBox.style.display = 'block';
-  });
+  function makeBtn(label, onClick) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = onClick;
+    return b;
+  }
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && input.value.trim()) runCommand(input.value.trim());
-    if (e.key === 'Escape') hideSuggest();
-  });
+  function makeSection(title) {
+    const sec = document.createElement('div');
+    sec.className = 'cmd-section';
+    const h = document.createElement('h3');
+    h.textContent = title;
+    sec.appendChild(h);
+    return sec;
+  }
 
-  document.getElementById('input-go').onclick = () => input.value.trim() && runCommand(input.value.trim());
-  document.getElementById('help-btn').onclick = () => runCommand('help');
+  function currentRoomItems() {
+    return (rooms[game.state.room] || {}).items || [];
+  }
+
+  function renderCommands(state) {
+    const box = document.getElementById('commands');
+    box.innerHTML = '';
+
+    // GO
+    const goSec = makeSection('🚶 Go');
+    availableExits(state).forEach((dir) =>
+      goSec.appendChild(makeBtn(dir.toUpperCase(), () => runCommand(`go ${dir}`)))
+    );
+    box.appendChild(goSec);
+
+    // LOOK AT
+    const roomIds = currentRoomItems();
+    if (roomIds.length > 0) {
+      const lookSec = makeSection('👁 Look at');
+      roomIds.forEach((id) => {
+        const item = getItem(id);
+        if (item) lookSec.appendChild(makeBtn(item.name, () => runCommand(`examine ${item.name}`)));
+      });
+      box.appendChild(lookSec);
+    }
+
+    // TAKE (hidden when nothing takeable)
+    const takeableIds = currentRoomItems().filter((id) => getItem(id)?.takeable);
+    if (takeableIds.length > 0) {
+      const takeSec = makeSection('✋ Take');
+      takeableIds.forEach((id) => {
+        const item = getItem(id);
+        takeSec.appendChild(makeBtn(item.name, () => runCommand(`take ${item.name}`)));
+      });
+      box.appendChild(takeSec);
+    }
+
+    // BACKPACK
+    if (state.inventory.length > 0) {
+      const packSec = makeSection('🎒 Backpack');
+      state.inventory.forEach((id) => {
+        const item = getItem(id);
+        if (item) packSec.appendChild(makeBtn(item.name, () => runCommand(`use ${item.name}`)));
+      });
+      box.appendChild(packSec);
+    }
+
+    // USE — context-smart, hidden when no actions apply
+    const useActions = contextUseActions(state);
+    if (useActions.length > 0) {
+      const useSec = makeSection('🔧 Use');
+      useActions.forEach(({ label, cmd }) =>
+        useSec.appendChild(makeBtn(label, () => runCommand(cmd)))
+      );
+      box.appendChild(useSec);
+    }
+
+    // HELP + NOTES (always visible)
+    const helpSec = makeSection('❓ Help');
+    helpSec.appendChild(makeBtn('Get a hint', () => runCommand('help')));
+    helpSec.appendChild(makeBtn('📋 My notes', () => runCommand('notes')));
+    box.appendChild(helpSec);
+
+    // CONTEXT: corridor actions (only when alien present)
+    if (state.room === 'corridor' && !state.flags.hasAccessCode) {
+      const ctxSec = makeSection('🫣 Actions');
+      ctxSec.appendChild(makeBtn('Hide!', () => runCommand('hide')));
+      if (state.inventory.includes('wrench')) {
+        ctxSec.appendChild(makeBtn('⚔️ Fight the alien', () => runCommand('attack alien with wrench')));
+      }
+      box.appendChild(ctxSec);
+    }
+  }
+
+  function contextUseActions(state) {
+    const actions = [];
+    if (state.inventory.includes('sealant') && !state.flags.visorFixed)
+      actions.push({ label: 'Seal visor crack', cmd: 'use super glue' });
+    if (state.inventory.includes('wrench') && state.room === 'surface' && !state.flags.trapdoorOpen)
+      actions.push({ label: 'Pry trapdoor open', cmd: 'pry trapdoor' });
+    if (state.room === 'cockpit' && !state.flags.lockerOpen)
+      actions.push({ label: 'Open storage locker', cmd: 'use locker' });
+    return actions;
+  }
+
   document.getElementById('restart-btn').onclick = () => {
     if (confirm('Start over from the crash?')) { clearState(); location.reload(); }
   };
 
   appendLine(game.intro, 'room');
   refresh();
-  input.focus();
 }
 
 document.addEventListener('DOMContentLoaded', boot);
-
-// helper exposed for render: list current room items
-
-window.__mmm = window.__mmm || {};
-window.__mmm.roomItems = (id) => (rooms[id] && rooms[id].items) || [];
 </script>
 </body>
 </html>
