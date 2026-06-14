@@ -118,6 +118,8 @@ function boot() {
       actions.push({ label: 'Pry trapdoor open', cmd: 'pry trapdoor' });
     if (state.room === 'cockpit' && !state.flags.lockerOpen)
       actions.push({ label: 'Open storage locker', cmd: 'use locker' });
+    if (state.room === 'vault' && !state.flags.vaultOpen && state.flags.hasAccessCode)
+      actions.push({ label: 'Enter vault code', cmd: 'enter blue 4' });
     return actions;
   }
 

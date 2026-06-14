@@ -9,9 +9,9 @@ import {
 } from './commands.js';
 
 const HELP_TEXT =
-  'Commands you can try: LOOK, EXAMINE <thing>, GO <direction> (or N/S/E/W/U/D), ' +
-  'TAKE <thing>, DROP <thing>, USE <thing>, READ <thing>, PRY <thing>, ' +
-  'HIDE, ATTACK <foe> WITH <thing>, TALK, ENTER <code>, INVENTORY (I), NOTES, HELP (?).';
+  'Use the buttons to play: GO moves you between rooms, LOOK AT examines things, ' +
+  'TAKE picks up items, and BACKPACK lets you use what you\'re carrying. ' +
+  'USE and ACTIONS sections appear when you have something specific to do.';
 
 export function createGame() {
   const state = createInitialState();

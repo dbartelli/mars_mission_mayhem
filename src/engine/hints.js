@@ -8,7 +8,7 @@ function currentGate(state) {
       hints: [
         'Your visor is cracked. Look around the cockpit for something to seal it.',
         'Try TAKE SEALANT, then USE SEALANT.',
-        'Type: USE SEALANT — it patches your visor so you can go OUT.',
+        'Click "Seal visor crack" in the Use section — it patches your visor so you can go OUT.',
       ],
     };
   }
@@ -38,7 +38,7 @@ function currentGate(state) {
       hints: [
         'A patrol is coming through the CORRIDOR door. You need its access code.',
         'You can HIDE in the alcove, or fight if you have a weapon. Talking is safe.',
-        'Type HIDE to sneak the code, or ATTACK ALIEN WITH WRENCH to fight.',
+        'Click "Hide!" to sneak past and get the code, or click "Fight the alien" if you have the wrench.',
       ],
     };
   }
@@ -48,7 +48,7 @@ function currentGate(state) {
       hints: [
         'Go to the VAULT and use the terminal.',
         'Check your NOTES for the access code.',
-        'Type: ENTER BLUE 4 at the vault terminal.',
+        'Check your NOTES for the code, then click "Enter vault code" in the Use section.',
       ],
     };
   }

@@ -170,7 +170,7 @@ export function cmdEnter(state, words = []) {
       state.flags.loggedIn = true;
       return (
         'The symbols light up in order and the terminal unlocks! The monitors flip to English. ' +
-        'A red message scrolls: "PATROL RETURNS IN 5 MINUTES." The security door to the EAST clicks open.'
+        'A red message scrolls: "PATROL RETURNS IN 5 MINUTES." Go BACK to the entry hall — the CORRIDOR door is now unlocked!'
       );
     }
     return 'The symbols flash red — wrong order. Look for a clue in the room (try READ ETCHING).';

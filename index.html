@@ -666,7 +666,7 @@ function cmdEnter(state, words = []) {
       state.flags.loggedIn = true;
       return (
         'The symbols light up in order and the terminal unlocks! The monitors flip to English. ' +
-        'A red message scrolls: "PATROL RETURNS IN 5 MINUTES." The security door to the EAST clicks open.'
+        'A red message scrolls: "PATROL RETURNS IN 5 MINUTES." Go BACK to the entry hall — the CORRIDOR door is now unlocked!'
       );
     }
     return 'The symbols flash red — wrong order. Look for a clue in the room (try READ ETCHING).';
@@ -751,7 +751,7 @@ function currentGate(state) {
       hints: [
         'Your visor is cracked. Look around the cockpit for something to seal it.',
         'Try TAKE SEALANT, then USE SEALANT.',
-        'Type: USE SEALANT — it patches your visor so you can go OUT.',
+        'Click "Seal visor crack" in the Use section — it patches your visor so you can go OUT.',
       ],
     };
   }
@@ -781,7 +781,7 @@ function currentGate(state) {
       hints: [
         'A patrol is coming through the CORRIDOR door. You need its access code.',
         'You can HIDE in the alcove, or fight if you have a weapon. Talking is safe.',
-        'Type HIDE to sneak the code, or ATTACK ALIEN WITH WRENCH to fight.',
+        'Click "Hide!" to sneak past and get the code, or click "Fight the alien" if you have the wrench.',
       ],
     };
   }
@@ -791,7 +791,7 @@ function currentGate(state) {
       hints: [
         'Go to the VAULT and use the terminal.',
         'Check your NOTES for the access code.',
-        'Type: ENTER BLUE 4 at the vault terminal.',
+        'Check your NOTES for the code, then click "Enter vault code" in the Use section.',
       ],
     };
   }
@@ -859,9 +859,9 @@ function clearState(storage = defaultStorage()) {
 
 
 const HELP_TEXT =
-  'Commands you can try: LOOK, EXAMINE <thing>, GO <direction> (or N/S/E/W/U/D), ' +
-  'TAKE <thing>, DROP <thing>, USE <thing>, READ <thing>, PRY <thing>, ' +
-  'HIDE, ATTACK <foe> WITH <thing>, TALK, ENTER <code>, INVENTORY (I), NOTES, HELP (?).';
+  'Use the buttons to play: GO moves you between rooms, LOOK AT examines things, ' +
+  'TAKE picks up items, and BACKPACK lets you use what you\'re carrying. ' +
+  'USE and ACTIONS sections appear when you have something specific to do.';
 
 function createGame() {
   const state = createInitialState();
@@ -1136,6 +1136,8 @@ function boot() {
       actions.push({ label: 'Pry trapdoor open', cmd: 'pry trapdoor' });
     if (state.room === 'cockpit' && !state.flags.lockerOpen)
       actions.push({ label: 'Open storage locker', cmd: 'use locker' });
+    if (state.room === 'vault' && !state.flags.vaultOpen && state.flags.hasAccessCode)
+      actions.push({ label: 'Enter vault code', cmd: 'enter blue 4' });
     return actions;
   }
 
