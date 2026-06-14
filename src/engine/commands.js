@@ -1,5 +1,5 @@
 import { rooms, items, getRoom, getItem } from '../data/world.js';
-import { hasItem, addItem, removeItem, visit } from './state.js';
+import { hasItem, addItem, removeItem, addNote, visit } from './state.js';
 import { SYMBOL_PUZZLE, checkSymbolOrder } from '../data/puzzles.js';
 
 function text(val, state) {
@@ -161,4 +161,50 @@ export function cmdEnter(state, words = []) {
 // Placeholder until Task 10 fills it in; defined now to keep imports valid.
 export function vaultEnter() {
   return 'There is nothing to enter here.';
+}
+
+const ACCESS_CODE_NOTE = { title: 'Vault Access Code', text: 'blue 4' };
+
+function grantAccessCode(state) {
+  state.flags.hasAccessCode = true;
+  addNote(state, ACCESS_CODE_NOTE);
+}
+
+export function cmdHide(state) {
+  if (state.room !== 'corridor') return 'There is nothing to hide from here.';
+  if (state.flags.hasAccessCode) return 'The corridor is quiet now.';
+  grantAccessCode(state);
+  return (
+    'You slip into the alcove and hold your breath. The patrol alien clomps past, taps a code into a ' +
+    'panel, and sets a CODE TABLET on the bench before leaving. You sneak out and read it: the access code is "blue 4". ' +
+    '(Saved to your NOTES.) The way NORTH is clear.'
+  );
+}
+
+export function cmdAttack(state, noun, noun2) {
+  const target = resolveItem(state, noun);
+  const isAlien = target === 'patrolAlien' || target === 'vaultAlien' || noun === 'alien';
+
+  if (state.room === 'corridor' && !state.flags.hasAccessCode) {
+    if (!noun2 || !hasItem(state, resolveItem(state, noun2))) {
+      return 'You swing — but with empty hands the alien shoves you back. You need a weapon, like the WRENCH.';
+    }
+    grantAccessCode(state);
+    return (
+      'You bonk the patrol alien with the wrench and it crumples in a heap! You grab its CODE TABLET — ' +
+      'the access code is "blue 4". (Saved to your NOTES.) You win! The way NORTH is clear.'
+    );
+  }
+
+  if (!isAlien) return "There's nothing here to attack.";
+  return 'You take a swing, but nothing happens.';
+}
+
+export function cmdTalk(state, noun) {
+  if (state.room === 'corridor' && !state.flags.hasAccessCode) {
+    return 'The alien squints at you, confused. It doesn\'t recognize you — better get OUT OF SIGHT (try HIDE) or be ready to fight!';
+  }
+  const id = resolveItem(state, noun);
+  if (!id) return 'There is no one here to talk to.';
+  return 'No response.';
 }
