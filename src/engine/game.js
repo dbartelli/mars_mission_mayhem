@@ -2,6 +2,7 @@ import { createInitialState } from './state.js';
 import { parse } from './parser.js';
 import { nounVocab } from '../data/world.js';
 import { getHint } from './hints.js';
+import { saveState, loadState } from './save.js';
 import {
   describeRoom, cmdGo, cmdExamine, cmdTake, cmdDrop, cmdInventory,
   cmdRead, cmdUse, cmdPry, cmdEnter, cmdHide, cmdAttack, cmdTalk,
@@ -15,6 +16,8 @@ const HELP_TEXT =
 export function createGame() {
   const state = createInitialState();
   const vocab = nounVocab();
+  const saved = loadState();
+  if (saved && saved.room) Object.assign(state, saved);
 
   function notes() {
     if (state.notes.length === 0) return 'Your notebook is empty so far.';
@@ -23,7 +26,17 @@ export function createGame() {
 
   function handle(input) {
     const p = parse(input, vocab);
-    if (!p.verb) return "I'm not sure what you mean. Type HELP or ? for ideas.";
+    let out;
+    if (!p.verb) {
+      out = "I'm not sure what you mean. Type HELP or ? for ideas.";
+    } else {
+      out = dispatch(p);
+    }
+    saveState(state);
+    return out;
+  }
+
+  function dispatch(p) {
     switch (p.verb) {
       case 'look': return describeRoom(state);
       case 'examine': return cmdExamine(state, p.noun);
