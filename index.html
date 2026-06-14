@@ -143,15 +143,15 @@ const rooms = {
     name: 'Base Entry Hall',
     description: (s) =>
       'An abandoned Martian base. Flickering MONITORS line the walls, covered in strange symbols. ' +
-      'A hallway runs NORTH to a control room. ' +
+      'A hallway leads to the CONTROL ROOM. ' +
       (s.flags.loggedIn
-        ? 'To the EAST a security door now stands unlocked.'
-        : 'To the EAST a heavy security door is sealed.'),
+        ? 'A security door to the CORRIDOR now stands unlocked.'
+        : 'A heavy security door to the CORRIDOR is sealed.'),
     items: ['monitors'],
     exits: {
       up: 'shaft',
-      north: 'terminalRoom',
-      east: { to: 'corridor', locked: (s) => !s.flags.loggedIn,
+      control: 'terminalRoom',
+      corridor: { to: 'corridor', locked: (s) => !s.flags.loggedIn,
         lockedMsg: 'The security door is sealed. The main TERMINAL must be unlocked first.' },
     },
   },
@@ -163,7 +163,7 @@ const rooms = {
       'A glowing TERMINAL waits for a login. Beside it, four Martian symbols are scrambled on the screen. ' +
       'An ETCHING is scratched into the wall.',
     items: ['terminal', 'etching'],
-    exits: { south: 'entryHall' },
+    exits: { back: 'entryHall' },
   },
 
   corridor: {
@@ -176,9 +176,9 @@ const rooms = {
         : 'A PATROL ALIEN is marching this way!'),
     items: ['alcove', 'patrolAlien'],
     exits: {
-      west: 'entryHall',
-      north: { to: 'vault', locked: (s) => !s.flags.hasAccessCode,
-        lockedMsg: 'The patrol alien blocks the way north. You need to get past it first.' },
+      back: 'entryHall',
+      vault: { to: 'vault', locked: (s) => !s.flags.hasAccessCode,
+        lockedMsg: 'The patrol alien is blocking the way to the VAULT. You need to get past it first.' },
     },
   },
 
@@ -191,7 +191,7 @@ const rooms = {
         ? 'The steel door has slid open. Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.'
         : 'The steel door is locked. The terminal asks for an access code — try ENTER and your code.'),
     items: ['vaultTerminal', 'steelDoor'],
-    exits: { south: 'corridor' },
+    exits: { back: 'corridor' },
   },
 };
 
@@ -348,12 +348,13 @@ function visit(state, roomId) {
 
 
 // ===== src/engine/parser.js =====
-const FILLER = new Set(['the', 'a', 'an', 'to', 'of', 'at', 'please', 'my', 'go']);
+const FILLER = new Set(['the', 'a', 'an', 'to', 'of', 'at', 'please', 'my']);
 
 const DIRECTIONS = {
-  n: 'north', s: 'south', e: 'east', w: 'west', u: 'up', d: 'down',
-  north: 'north', south: 'south', east: 'east', west: 'west',
+  u: 'up', d: 'down',
   up: 'up', down: 'down', out: 'out', in: 'in', back: 'back',
+  // named exits — so players can type just "control" or "go control"
+  control: 'control', corridor: 'corridor', vault: 'vault',
 };
 
 const VERB_ALIASES = {
@@ -441,11 +442,11 @@ function parse(input, nounVocab = []) {
   let verb = VERB_ALIASES[first] || fuzzyMatch(first, VERB_VOCAB, 1);
   let rest = tokens.slice(1);
 
-  // "go north" etc.
+  // "go up", "go control", "go vault" etc. — mapped directions first, then pass token through.
   if (verb === 'go' || first === 'go') {
     verb = 'go';
     const dirToken = rest[0];
-    const dir = dirToken ? DIRECTIONS[dirToken] || fuzzyMatch(dirToken, Object.keys(DIRECTIONS), 2) : null;
+    const dir = dirToken ? (DIRECTIONS[dirToken] || dirToken) : null;
     return { verb: 'go', noun: dir };
   }
 
@@ -758,7 +759,7 @@ function currentGate(state) {
     return {
       key: 'patrol',
       hints: [
-        'A patrol is coming through the EAST door. You need its access code.',
+        'A patrol is coming through the CORRIDOR door. You need its access code.',
         'You can HIDE in the alcove, or fight if you have a weapon. Talking is safe.',
         'Type HIDE to sneak the code, or ATTACK ALIEN WITH WRENCH to fight.',
       ],
@@ -768,7 +769,7 @@ function currentGate(state) {
     return {
       key: 'vaultCode',
       hints: [
-        'Go NORTH to the vault and use the terminal.',
+        'Go to the VAULT and use the terminal.',
         'Check your NOTES for the access code.',
         'Type: ENTER BLUE 4 at the vault terminal.',
       ],
@@ -1026,7 +1027,7 @@ function applySuggestion(input, word) {
 
 
 const VERBS = ['look', 'examine', 'go', 'take', 'drop', 'use', 'read', 'pry',
-  'hide', 'attack', 'talk', 'enter', 'inventory', 'notes', 'help', 'north', 'south', 'east', 'west', 'up', 'down'];
+  'hide', 'attack', 'talk', 'enter', 'inventory', 'notes', 'help', 'up', 'down', 'out', 'back', 'control', 'corridor', 'vault'];
 
 function boot() {
   // expose item lookup for render helpers (merge — do NOT clobber roomItems set below)

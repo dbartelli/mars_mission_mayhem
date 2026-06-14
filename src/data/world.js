@@ -52,15 +52,15 @@ export const rooms = {
     name: 'Base Entry Hall',
     description: (s) =>
       'An abandoned Martian base. Flickering MONITORS line the walls, covered in strange symbols. ' +
-      'A hallway runs NORTH to a control room. ' +
+      'A hallway leads to the CONTROL ROOM. ' +
       (s.flags.loggedIn
-        ? 'To the EAST a security door now stands unlocked.'
-        : 'To the EAST a heavy security door is sealed.'),
+        ? 'A security door to the CORRIDOR now stands unlocked.'
+        : 'A heavy security door to the CORRIDOR is sealed.'),
     items: ['monitors'],
     exits: {
       up: 'shaft',
-      north: 'terminalRoom',
-      east: { to: 'corridor', locked: (s) => !s.flags.loggedIn,
+      control: 'terminalRoom',
+      corridor: { to: 'corridor', locked: (s) => !s.flags.loggedIn,
         lockedMsg: 'The security door is sealed. The main TERMINAL must be unlocked first.' },
     },
   },
@@ -72,7 +72,7 @@ export const rooms = {
       'A glowing TERMINAL waits for a login. Beside it, four Martian symbols are scrambled on the screen. ' +
       'An ETCHING is scratched into the wall.',
     items: ['terminal', 'etching'],
-    exits: { south: 'entryHall' },
+    exits: { back: 'entryHall' },
   },
 
   corridor: {
@@ -85,9 +85,9 @@ export const rooms = {
         : 'A PATROL ALIEN is marching this way!'),
     items: ['alcove', 'patrolAlien'],
     exits: {
-      west: 'entryHall',
-      north: { to: 'vault', locked: (s) => !s.flags.hasAccessCode,
-        lockedMsg: 'The patrol alien blocks the way north. You need to get past it first.' },
+      back: 'entryHall',
+      vault: { to: 'vault', locked: (s) => !s.flags.hasAccessCode,
+        lockedMsg: 'The patrol alien is blocking the way to the VAULT. You need to get past it first.' },
     },
   },
 
@@ -100,7 +100,7 @@ export const rooms = {
         ? 'The steel door has slid open. Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.'
         : 'The steel door is locked. The terminal asks for an access code — try ENTER and your code.'),
     items: ['vaultTerminal', 'steelDoor'],
-    exits: { south: 'corridor' },
+    exits: { back: 'corridor' },
   },
 };
 

@@ -7,7 +7,7 @@ import { suggest, applySuggestion } from './autocomplete.js';
 import { renderPanel } from './panel.js';
 
 const VERBS = ['look', 'examine', 'go', 'take', 'drop', 'use', 'read', 'pry',
-  'hide', 'attack', 'talk', 'enter', 'inventory', 'notes', 'help', 'north', 'south', 'east', 'west', 'up', 'down'];
+  'hide', 'attack', 'talk', 'enter', 'inventory', 'notes', 'help', 'up', 'down', 'out', 'back', 'control', 'corridor', 'vault'];
 
 function boot() {
   // expose item lookup for render helpers (merge — do NOT clobber roomItems set below)

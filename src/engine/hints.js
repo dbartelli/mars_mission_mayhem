@@ -36,7 +36,7 @@ function currentGate(state) {
     return {
       key: 'patrol',
       hints: [
-        'A patrol is coming through the EAST door. You need its access code.',
+        'A patrol is coming through the CORRIDOR door. You need its access code.',
         'You can HIDE in the alcove, or fight if you have a weapon. Talking is safe.',
         'Type HIDE to sneak the code, or ATTACK ALIEN WITH WRENCH to fight.',
       ],
@@ -46,7 +46,7 @@ function currentGate(state) {
     return {
       key: 'vaultCode',
       hints: [
-        'Go NORTH to the vault and use the terminal.',
+        'Go to the VAULT and use the terminal.',
         'Check your NOTES for the access code.',
         'Type: ENTER BLUE 4 at the vault terminal.',
       ],

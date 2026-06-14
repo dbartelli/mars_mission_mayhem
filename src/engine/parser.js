@@ -1,9 +1,10 @@
-const FILLER = new Set(['the', 'a', 'an', 'to', 'of', 'at', 'please', 'my', 'go']);
+const FILLER = new Set(['the', 'a', 'an', 'to', 'of', 'at', 'please', 'my']);
 
 const DIRECTIONS = {
-  n: 'north', s: 'south', e: 'east', w: 'west', u: 'up', d: 'down',
-  north: 'north', south: 'south', east: 'east', west: 'west',
+  u: 'up', d: 'down',
   up: 'up', down: 'down', out: 'out', in: 'in', back: 'back',
+  // named exits — so players can type just "control" or "go control"
+  control: 'control', corridor: 'corridor', vault: 'vault',
 };
 
 const VERB_ALIASES = {
@@ -91,11 +92,11 @@ export function parse(input, nounVocab = []) {
   let verb = VERB_ALIASES[first] || fuzzyMatch(first, VERB_VOCAB, 1);
   let rest = tokens.slice(1);
 
-  // "go north" etc.
+  // "go up", "go control", "go vault" etc. — mapped directions first, then pass token through.
   if (verb === 'go' || first === 'go') {
     verb = 'go';
     const dirToken = rest[0];
-    const dir = dirToken ? DIRECTIONS[dirToken] || fuzzyMatch(dirToken, Object.keys(DIRECTIONS), 2) : null;
+    const dir = dirToken ? (DIRECTIONS[dirToken] || dirToken) : null;
     return { verb: 'go', noun: dir };
   }
 

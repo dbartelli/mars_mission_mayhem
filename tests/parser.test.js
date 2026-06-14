@@ -23,9 +23,11 @@ describe('parser', () => {
     expect(r.noun).toBe('sealant');
   });
 
-  it('maps single-letter and direction shortcuts to a go command', () => {
-    expect(parse('n', NOUNS)).toMatchObject({ verb: 'go', noun: 'north' });
-    expect(parse('go north', NOUNS)).toMatchObject({ verb: 'go', noun: 'north' });
+  it('maps shorthand and named exits to a go command', () => {
+    expect(parse('u', NOUNS)).toMatchObject({ verb: 'go', noun: 'up' });
+    expect(parse('go up', NOUNS)).toMatchObject({ verb: 'go', noun: 'up' });
+    expect(parse('go control', NOUNS)).toMatchObject({ verb: 'go', noun: 'control' });
+    expect(parse('go vault', NOUNS)).toMatchObject({ verb: 'go', noun: 'vault' });
   });
 
   it('splits "with"/"on" into a second noun', () => {

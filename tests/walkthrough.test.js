@@ -22,8 +22,8 @@ describe('full slice-1 walkthrough', () => {
     play(game, [
       'read mission screen', 'open locker', 'take super glue', 'use super glue', 'take wrench',
       'go out', 'pry trapdoor', 'go down', 'go down',
-      'go north', 'read etching', 'enter sun star beam rock',
-      'go south', 'go east', 'hide', 'go north',
+      'go control', 'read etching', 'enter sun star beam rock',
+      'go back', 'go corridor', 'hide', 'go vault',
       'enter blue 4', 'take crystal',
     ]);
     expect(game.state.flags.hasAccessCode).toBe(true);
@@ -38,8 +38,8 @@ describe('full slice-1 walkthrough', () => {
     play(game, [
       'open locker', 'take super glue', 'use super glue', 'take wrench',
       'go out', 'pry trapdoor', 'go down', 'go down',
-      'go north', 'enter sun star beam rock',
-      'go south', 'go east', 'attack alien with wrench', 'go north',
+      'go control', 'enter sun star beam rock',
+      'go back', 'go corridor', 'attack alien with wrench', 'go vault',
       'enter blue 4', 'take crystal', 'take sharp tool',
     ]);
     expect(game.state.flags.slice1Complete).toBe(true);
