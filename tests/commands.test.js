@@ -105,6 +105,17 @@ describe('phase 1 beats', () => {
     expect(out.toLowerCase()).toContain('crack');
   });
 
+  it('locker description drops items already taken', () => {
+    const s = createInitialState();
+    cmdUse(s, 'locker');      // opens locker, adds sealant/wrench/firstAidKit to room
+    cmdTake(s, 'super glue'); // removes sealant
+    cmdTake(s, 'wrench');     // removes wrench
+    cmdTake(s, 'first aid kit'); // removes firstAidKit
+    const desc = describeRoom(s);
+    expect(desc).not.toMatch(/SUPER GLUE|WRENCH|FIRST AID KIT/);
+    expect(desc).toContain('empty');
+  });
+
   it('pries the trapdoor open only with the wrench', () => {
     const s = createInitialState();
     s.flags.visorFixed = true;

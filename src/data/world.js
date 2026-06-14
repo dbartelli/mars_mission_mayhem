@@ -4,15 +4,21 @@ export const rooms = {
   cockpit: {
     id: 'cockpit',
     name: 'Crashed Cockpit',
-    description: (s) =>
-      (s.flags.visorFixed
-        ? 'Your visor is patched and holding. '
-        : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +
-      'A MISSION SCREEN flickers on the dashboard. ' +
-      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER' +
-      (s.flags.lockerOpen
-        ? ' (open — SUPER GLUE, WRENCH, and FIRST AID KIT inside).'
-        : ' (shut).'),
+    description: (s) => {
+      const base =
+        (s.flags.visorFixed
+          ? 'Your visor is patched and holding. '
+          : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +
+        'A MISSION SCREEN flickers on the dashboard. ' +
+        'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER';
+      if (!s.flags.lockerOpen) return base + ' (shut).';
+      const r = rooms.cockpit;
+      const inside = [];
+      if ((r.items || []).includes('sealant')) inside.push('SUPER GLUE');
+      if ((r.items || []).includes('wrench')) inside.push('WRENCH');
+      if ((r.items || []).includes('firstAidKit')) inside.push('FIRST AID KIT');
+      return base + (inside.length ? ` (open — ${inside.join(', ')} inside).` : ' (open — empty).');
+    },
     items: ['missionScreen', 'locker'],
     exits: {
       out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
