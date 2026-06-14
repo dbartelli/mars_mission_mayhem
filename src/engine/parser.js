@@ -88,7 +88,7 @@ export function parse(input, nounVocab = []) {
     return { verb: 'go', noun: DIRECTIONS[first] };
   }
 
-  let verb = VERB_ALIASES[first] || fuzzyMatch(first, VERB_VOCAB, 2);
+  let verb = VERB_ALIASES[first] || fuzzyMatch(first, VERB_VOCAB, 1);
   let rest = tokens.slice(1);
 
   // "go north" etc.

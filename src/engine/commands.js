@@ -24,8 +24,8 @@ export function availableExits(state) {
 export function describeRoom(state) {
   const room = getRoom(state.room);
   const desc = text(room.description, state);
-  const exits = availableExits(state);
-  const exitLine = exits.length ? `Exits: ${exits.join(', ')}.` : 'There are no obvious exits.';
+  const allDirs = Object.keys(room.exits || {});
+  const exitLine = allDirs.length ? `Exits: ${allDirs.join(', ')}.` : 'No exits.';
   return `**${room.name}**\n${desc}\n${exitLine}`;
 }
 

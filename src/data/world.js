@@ -5,9 +5,6 @@ export const rooms = {
     id: 'cockpit',
     name: 'Crashed Cockpit',
     description: (s) =>
-      (s.flags.cockpitIntroSeen
-        ? 'You are back in the wrecked cockpit. '
-        : 'You wake in the wreck of your spaceship. You are the only survivor of the crash. ') +
       (s.flags.visorFixed
         ? 'Your visor is patched and holding. '
         : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +

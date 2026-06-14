@@ -17,7 +17,8 @@ export function createGame() {
   const state = createInitialState();
   const vocab = nounVocab();
   const saved = loadState();
-  if (saved && saved.room) Object.assign(state, saved);
+  const isNewGame = !saved || !saved.room;
+  if (!isNewGame) Object.assign(state, saved);
 
   function notes() {
     if (state.notes.length === 0) return 'Your notebook is empty so far.';
@@ -58,8 +59,9 @@ export function createGame() {
     }
   }
 
-  // initial room description; flag prevents repeating the wake-up intro on subsequent LOOKs
-  const intro = describeRoom(state);
-  state.flags.cockpitIntroSeen = true;
+  const roomDesc = describeRoom(state);
+  const intro = isNewGame
+    ? 'You wake in the wreck of your spaceship. You are the only survivor of the crash.\n\n' + roomDesc
+    : 'Continuing your mission...\n\n' + roomDesc;
   return { state, handle, intro };
 }
