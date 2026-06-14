@@ -24,7 +24,7 @@ describe('movement & look', () => {
   it('blocks a locked exit with its message and stays put', () => {
     const s = createInitialState();
     const out = cmdGo(s, 'out');
-    expect(out.toLowerCase()).toContain('seal it first');
+    expect(out.toLowerCase()).toContain('oxygen');
     expect(s.room).toBe('cockpit');
   });
 
@@ -39,7 +39,8 @@ describe('movement & look', () => {
 
   it('examines an item in the room', () => {
     const s = createInitialState();
-    expect(cmdExamine(s, 'sealant')).toContain('visor sealant');
+    cmdUse(s, 'locker'); // open the locker so items are visible
+    expect(cmdExamine(s, 'super glue')).toContain('super glue');
   });
 
   it('lists only currently-available exits', () => {
@@ -53,6 +54,7 @@ describe('movement & look', () => {
 describe('inventory', () => {
   it('takes a takeable item from the room', () => {
     const s = createInitialState();
+    cmdUse(s, 'locker'); // open locker to reveal items
     const out = cmdTake(s, 'wrench');
     expect(out.toLowerCase()).toContain('take');
     expect(s.inventory).toContain('wrench');
@@ -67,6 +69,7 @@ describe('inventory', () => {
 
   it('lists inventory contents', () => {
     const s = createInitialState();
+    cmdUse(s, 'locker');
     cmdTake(s, 'wrench');
     expect(cmdInventory(s)).toContain('wrench');
     const empty = createInitialState();
@@ -75,6 +78,7 @@ describe('inventory', () => {
 
   it('drops an item back into the room', () => {
     const s = createInitialState();
+    cmdUse(s, 'locker');
     cmdTake(s, 'wrench');
     cmdDrop(s, 'wrench');
     expect(s.inventory).not.toContain('wrench');
@@ -87,11 +91,13 @@ describe('phase 1 beats', () => {
     expect(cmdRead(s, 'mission screen')).toContain('HOSTILE');
   });
 
-  it('seals the visor with the sealant and sets the flag', () => {
+  it('seals the visor with the super glue and sets the flag', () => {
     const s = createInitialState();
-    const out = cmdUse(s, 'sealant', 'visor');
+    cmdUse(s, 'locker');
+    cmdTake(s, 'super glue');
+    const out = cmdUse(s, 'super glue');
     expect(s.flags.visorFixed).toBe(true);
-    expect(out.toLowerCase()).toContain('visor');
+    expect(out.toLowerCase()).toContain('crack');
   });
 
   it('pries the trapdoor open only with the wrench', () => {

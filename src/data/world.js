@@ -7,12 +7,16 @@ export const rooms = {
     description: (s) =>
       'You wake in the wreck of your spaceship. You are the only survivor of the crash. ' +
       'A red OXYGEN LOW warning blinks, and a crack runs across your helmet visor. ' +
-      'A MISSION SCREEN flickers on the dashboard. ' +
-      (s.flags.visorFixed ? 'Your visor is patched and holding.' : 'You need to seal that crack.'),
-    items: ['missionScreen', 'sealant', 'wrench'],
+      'A MISSION SCREEN flickers on the dashboard — it looks important. ' +
+      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER. ' +
+      (s.flags.lockerOpen
+        ? 'The locker hangs open — you can see SUPER GLUE, a WRENCH, and a FIRST AID KIT inside.'
+        : 'The locker is shut.') +
+      (s.flags.visorFixed ? ' Your visor is patched and holding.' : ''),
+    items: ['missionScreen', 'locker'],
     exits: {
       out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
-        lockedMsg: 'Not yet — the dust outside would pour through your cracked visor. Seal it first.' },
+        lockedMsg: 'WARNING: Your oxygen is leaking rapidly! You need to find something in the ship to seal your visor before you go out!' },
     },
   },
 
@@ -102,19 +106,30 @@ export const rooms = {
 
 export const items = {
   missionScreen: {
-    id: 'missionScreen', name: 'mission screen', aliases: ['screen', 'mission'], takeable: false,
-    description: 'A cracked dashboard screen.',
+    id: 'missionScreen', name: 'mission screen', aliases: ['screen', 'mission', 'dashboard'], takeable: false,
+    description: 'A cracked dashboard screen, still flickering. There is text on it — try READ MISSION SCREEN.',
     readText:
-      'MISSION LOG: Scans detected HOSTILE Martian lifeforms on the surface. ' +
-      'ABORT MISSION. Repair the shuttle and return to Earth immediately.',
+      '*** MISSION LOG — URGENT ***\n' +
+      'Long-range scans detected HOSTILE Martian lifeforms on the surface. ' +
+      'ABORT MISSION. Do NOT make contact. Repair the shuttle and return to Earth immediately.',
+  },
+  locker: {
+    id: 'locker', name: 'storage locker', aliases: ['locker', 'cabinet', 'storage'], takeable: false,
+    description: (s) => s.flags.lockerOpen
+      ? 'An open storage locker. Inside you see SUPER GLUE, a WRENCH, and a FIRST AID KIT.'
+      : 'A wall-mounted storage locker, shut but not locked.',
   },
   sealant: {
-    id: 'sealant', name: 'sealant', aliases: ['patch', 'repair patch', 'tube'], takeable: true,
-    description: 'A tube of quick-drying visor sealant.',
+    id: 'sealant', name: 'super glue', aliases: ['glue', 'tube', 'sealant', 'super'], takeable: true,
+    description: 'A fat tube of fast-drying super glue. Should work on just about anything.',
   },
   wrench: {
     id: 'wrench', name: 'wrench', aliases: ['pry bar', 'prybar', 'bar', 'pipe'], takeable: true,
     description: 'A heavy wrench. Good for prying — or swinging.',
+  },
+  firstAidKit: {
+    id: 'firstAidKit', name: 'first aid kit', aliases: ['first aid', 'kit', 'medkit'], takeable: true,
+    description: 'A standard emergency first aid kit. Hopefully you won\'t need it.',
   },
   trapdoor: {
     id: 'trapdoor', name: 'trapdoor', aliases: ['door', 'hatch'], takeable: false,
@@ -184,6 +199,6 @@ export function nounVocab() {
     for (const a of item.aliases || []) set.add(a);
   }
   // common scenery/verbs-as-nouns
-  ['visor', 'sand', 'symbols', 'code'].forEach((w) => set.add(w));
+  ['visor', 'sand', 'symbols', 'code', 'hatch', 'open'].forEach((w) => set.add(w));
   return [...set];
 }

@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createGame } from '../src/engine/game.js';
 import { rooms } from '../src/data/world.js';
 
-// The game mutates shared room.items; reset the two mutated rooms before each run.
+// The game mutates shared room.items and flags; reset before each run.
 const pristine = {
-  cockpit: ['missionScreen', 'sealant', 'wrench'],
+  cockpit: ['missionScreen', 'locker'],
   surface: ['trapdoor'],
   vault: ['vaultTerminal', 'steelDoor'],
 };
@@ -20,7 +20,7 @@ describe('full slice-1 walkthrough', () => {
   it('completes via the STEALTH path', () => {
     const game = createGame();
     play(game, [
-      'read mission screen', 'take sealant', 'use sealant', 'take wrench',
+      'read mission screen', 'open locker', 'take super glue', 'use super glue', 'take wrench',
       'go out', 'pry trapdoor', 'go down', 'go down',
       'go north', 'read etching', 'enter sun star beam rock',
       'go south', 'go east', 'hide', 'go north',
@@ -36,7 +36,7 @@ describe('full slice-1 walkthrough', () => {
   it('completes via the COMBAT path', () => {
     const game = createGame();
     play(game, [
-      'take sealant', 'use sealant', 'take wrench',
+      'open locker', 'take super glue', 'use super glue', 'take wrench',
       'go out', 'pry trapdoor', 'go down', 'go down',
       'go north', 'enter sun star beam rock',
       'go south', 'go east', 'attack alien with wrench', 'go north',

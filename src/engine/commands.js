@@ -116,15 +116,25 @@ export function cmdUse(state, noun, noun2) {
   const id = resolveItem(state, noun);
   if (!id) return "You don't have that.";
 
+  // Open the storage locker
+  if (id === 'locker') {
+    if (state.flags.lockerOpen) return 'The locker is already open. Inside: SUPER GLUE, a WRENCH, and a FIRST AID KIT.';
+    state.flags.lockerOpen = true;
+    const room = getRoom(state.room);
+    room.items = room.items || [];
+    if (!room.items.includes('sealant')) room.items.push('sealant');
+    if (!room.items.includes('wrench')) room.items.push('wrench');
+    if (!room.items.includes('firstAidKit')) room.items.push('firstAidKit');
+    return 'You pull open the locker. Inside you find SUPER GLUE, a WRENCH, and a FIRST AID KIT.';
+  }
+
   // Seal the visor
   if (id === 'sealant') {
     if (state.flags.visorFixed) return 'Your visor is already sealed.';
     state.flags.visorFixed = true;
-    if (!hasItem(state, 'sealant') && (getRoom(state.room).items || []).includes('sealant')) {
-      getRoom(state.room).items = getRoom(state.room).items.filter((x) => x !== 'sealant');
-    }
     removeItem(state, 'sealant');
-    return 'You smear the sealant across your visor. It dries fast — the crack is sealed and the oxygen warning fades.';
+    getRoom(state.room).items = (getRoom(state.room).items || []).filter((x) => x !== 'sealant');
+    return 'You squeeze a bead of super glue along the crack in your visor. It dries in seconds — the crack is sealed and the oxygen warning fades!';
   }
 
   // Use the wrench on the trapdoor == pry

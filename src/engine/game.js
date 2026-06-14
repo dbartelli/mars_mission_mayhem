@@ -47,7 +47,7 @@ export function createGame() {
       case 'read': return cmdRead(state, p.noun);
       case 'use': return cmdUse(state, p.noun, p.noun2);
       case 'pry': return cmdPry(state, p.noun);
-      case 'open': return p.noun === 'trapdoor' ? cmdPry(state, 'trapdoor') : cmdUse(state, p.noun, p.noun2);
+      case 'open': return (p.noun === 'trapdoor') ? cmdPry(state, 'trapdoor') : cmdUse(state, p.noun, p.noun2);
       case 'enter': return cmdEnter(state, p.words || []);
       case 'hide': return cmdHide(state);
       case 'attack': return cmdAttack(state, p.noun, p.noun2);
