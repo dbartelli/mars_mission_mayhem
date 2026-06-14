@@ -198,7 +198,7 @@ const rooms = {
 const items = {
   missionScreen: {
     id: 'missionScreen', name: 'mission screen', aliases: ['screen', 'mission', 'dashboard'], takeable: false,
-    description: 'A cracked dashboard screen, still flickering. There is text on it — try READ MISSION SCREEN.',
+    description: 'A cracked dashboard screen, still flickering with an urgent message.',
     readText:
       '*** MISSION LOG — URGENT ***\n' +
       'Long-range scans detected HOSTILE Martian lifeforms on the surface. ' +
@@ -539,7 +539,11 @@ function cmdGo(state, dir) {
 function cmdExamine(state, noun) {
   const id = resolveItem(state, noun);
   if (!id) return "You don't see that here.";
-  return text(getItem(id).description, state);
+  const item = getItem(id);
+  const desc = text(item.description, state);
+  // If the item has readable text, show it together so EXAMINE and READ both work.
+  if (item.readText) return desc + '\n\n' + text(item.readText, state);
+  return desc;
 }
 
 function cmdTake(state, noun) {

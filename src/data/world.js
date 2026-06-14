@@ -107,7 +107,7 @@ export const rooms = {
 export const items = {
   missionScreen: {
     id: 'missionScreen', name: 'mission screen', aliases: ['screen', 'mission', 'dashboard'], takeable: false,
-    description: 'A cracked dashboard screen, still flickering. There is text on it — try READ MISSION SCREEN.',
+    description: 'A cracked dashboard screen, still flickering with an urgent message.',
     readText:
       '*** MISSION LOG — URGENT ***\n' +
       'Long-range scans detected HOSTILE Martian lifeforms on the surface. ' +

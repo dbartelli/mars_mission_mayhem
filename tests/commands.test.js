@@ -43,6 +43,11 @@ describe('movement & look', () => {
     expect(cmdExamine(s, 'super glue')).toContain('super glue');
   });
 
+  it('examine shows readText so players do not need to know READ', () => {
+    const s = createInitialState();
+    expect(cmdExamine(s, 'mission screen')).toContain('HOSTILE');
+  });
+
   it('lists only currently-available exits', () => {
     const s = createInitialState();
     expect(availableExits(s)).toEqual([]); // visor not fixed -> out is locked

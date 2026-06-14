@@ -64,7 +64,11 @@ export function cmdGo(state, dir) {
 export function cmdExamine(state, noun) {
   const id = resolveItem(state, noun);
   if (!id) return "You don't see that here.";
-  return text(getItem(id).description, state);
+  const item = getItem(id);
+  const desc = text(item.description, state);
+  // If the item has readable text, show it together so EXAMINE and READ both work.
+  if (item.readText) return desc + '\n\n' + text(item.readText, state);
+  return desc;
 }
 
 export function cmdTake(state, noun) {
