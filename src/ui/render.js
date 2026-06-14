@@ -1,5 +1,3 @@
-import { getRoom } from '../data/world.js';
-
 const MAP_LAYOUT = [
   ['surface', 'shaft', ''],
   ['cockpit', 'entryHall', 'terminalRoom'],
@@ -32,31 +30,5 @@ export function renderMinimap(state) {
       if (state.room === id) cell.classList.add('here');
       map.appendChild(cell);
     }
-  }
-}
-
-export function renderExits(exits, onCommand) {
-  const box = document.getElementById('exits');
-  box.innerHTML = '<h3>Go</h3>';
-  for (const dir of exits) {
-    const b = document.createElement('button');
-    b.textContent = dir.toUpperCase();
-    b.onclick = () => onCommand(`go ${dir}`);
-    box.appendChild(b);
-  }
-}
-
-export function renderObjects(state, onCommand) {
-  const box = document.getElementById('objects');
-  if (!box) return;
-  box.innerHTML = '<h3>Look at</h3>';
-  const room = getRoom(state.room);
-  for (const id of room.items || []) {
-    const b = document.createElement('button');
-    const { getItem } = window.__mmm || {};
-    const name = getItem ? getItem(id).name : id;
-    b.textContent = name;
-    b.onclick = () => onCommand(`examine ${name}`);
-    box.appendChild(b);
   }
 }
