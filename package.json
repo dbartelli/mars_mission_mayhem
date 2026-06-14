@@ -1,0 +1,14 @@
+{
+  "name": "mars-mission-mayhem",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}
