@@ -1,5 +1,6 @@
 import { rooms, items, getRoom, getItem } from '../data/world.js';
 import { hasItem, addItem, removeItem, visit } from './state.js';
+import { SYMBOL_PUZZLE, checkSymbolOrder } from '../data/puzzles.js';
 
 function text(val, state) {
   return typeof val === 'function' ? val(state) : val;
@@ -135,4 +136,29 @@ export function cmdPry(state, noun) {
   }
   state.flags.trapdoorOpen = true;
   return 'You brush away the red sand and lever the wrench under the trapdoor. It groans open, revealing a ladder DOWN.';
+}
+
+// cmdEnter handles both the symbol login (terminalRoom) and the vault code (vault).
+export function cmdEnter(state, words = []) {
+  if (state.room === 'terminalRoom') {
+    const known = new Set(SYMBOL_PUZZLE.symbols.map((s) => s.id));
+    const attempt = words.filter((w) => known.has(w));
+    if (state.flags.loggedIn) return 'You are already logged in.';
+    if (checkSymbolOrder(attempt)) {
+      state.flags.loggedIn = true;
+      return (
+        'The symbols light up in order and the terminal unlocks! The monitors flip to English. ' +
+        'A red message scrolls: "PATROL RETURNS IN 5 MINUTES." The security door to the EAST clicks open.'
+      );
+    }
+    return 'The symbols flash red — wrong order. Look for a clue in the room (try READ ETCHING).';
+  }
+
+  // vault handled in Task 10 (cmdEnter extended there)
+  return vaultEnter(state, words);
+}
+
+// Placeholder until Task 10 fills it in; defined now to keep imports valid.
+export function vaultEnter() {
+  return 'There is nothing to enter here.';
 }
