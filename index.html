@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mars Mission Mayhem</title>
+  <style>:root {
+  --bg: #1a0e0a;
+  --panel: #241310;
+  --rust: #c1440e;
+  --rust-light: #e9743a;
+  --text: #f4e6d8;
+  --dim: #b89a86;
+  --good: #6ee7b7;
+  --glow: 0 0 12px rgba(233, 116, 58, 0.6);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  background: radial-gradient(circle at 30% 20%, #3a1c12, var(--bg));
+  color: var(--text);
+  line-height: 1.25;
+}
+#app { display: flex; gap: 12px; padding: 12px; height: 100vh; }
+#left { flex: 1.3; display: flex; flex-direction: column; min-width: 0; }
+#right { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pane {
+  background: var(--panel);
+  border: 2px solid var(--rust);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: var(--glow);
+}
+#console { flex: 1; overflow-y: auto; white-space: pre-wrap; }
+#console .room { color: var(--rust-light); font-weight: bold; }
+#console .you { color: var(--good); }
+#console p { margin: 0 0 10px; }
+#inputRow { display: flex; gap: 8px; margin-top: 10px; position: relative; }
+#input {
+  flex: 1; font-size: 1.1rem; padding: 10px; border-radius: 8px;
+  border: 2px solid var(--rust); background: #160b08; color: var(--text);
+}
+#help-btn, #input-go {
+  border: none; border-radius: 8px; padding: 0 14px; font-size: 1.2rem;
+  background: var(--rust); color: white; cursor: pointer;
+}
+#suggest {
+  position: absolute; bottom: 52px; left: 0; background: #160b08;
+  border: 1px solid var(--rust); border-radius: 8px; display: none; z-index: 5;
+}
+#suggest div { padding: 6px 12px; cursor: pointer; }
+#suggest div.active, #suggest div:hover { background: var(--rust); }
+#panel { flex: 1; min-height: 180px; }
+#exits button, #objects button {
+  margin: 4px; padding: 6px 10px; border-radius: 16px; border: 1px solid var(--rust-light);
+  background: transparent; color: var(--text); cursor: pointer;
+}
+#minimap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cell { text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 0.8rem; background: #160b08; color: var(--dim); }
+.cell.here { background: var(--rust); color: white; box-shadow: var(--glow); }
+.cell.seen { color: var(--text); }
+.symbols { display: flex; gap: 10px; flex-wrap: wrap; }
+.symbol {
+  font-size: 2.2rem; width: 64px; height: 64px; display: flex; align-items: center;
+  justify-content: center; border: 2px solid var(--rust); border-radius: 10px; cursor: pointer;
+}
+.symbol.picked { background: var(--rust); box-shadow: var(--glow); }
+h3 { margin: 0 0 8px; color: var(--rust-light); }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div id="left" class="pane">
+      <div id="console"></div>
+      <div id="inputRow">
+        <div id="suggest"></div>
+        <input id="input" autocomplete="off" placeholder="Type a command… (try LOOK or HELP)" />
+        <button id="input-go">▶</button>
+        <button id="help-btn">?</button>
+      </div>
+    </div>
+    <div id="right">
+      <div id="panel" class="pane"></div>
+      <div id="exits" class="pane"></div>
+      <div id="objects" class="pane"></div>
+      <div class="pane"><h3>Map</h3><div id="minimap"></div>
+        <button id="restart-btn" style="margin-top:10px">Restart</button></div>
+    </div>
+  </div>
+  <script type="module">// ===== src/data/world.js =====
+// All slice-1 rooms and items as plain data. Logic lives in the engine.
+
+const rooms = {
+  cockpit: {
+    id: 'cockpit',
+    name: 'Crashed Cockpit',
+    description: (s) =>
+      'You wake in the wreck of your spaceship. You are the only survivor of the crash. ' +
+      'A red OXYGEN LOW warning blinks, and a crack runs across your helmet visor. ' +
+      'A MISSION SCREEN flickers on the dashboard. ' +
+      (s.flags.visorFixed ? 'Your visor is patched and holding.' : 'You need to seal that crack.'),
+    items: ['missionScreen', 'sealant', 'wrench'],
+    exits: {
+      out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
+        lockedMsg: 'Not yet — the dust outside would pour through your cracked visor. Seal it first.' },
+    },
+  },
+
+  surface: {
+    id: 'surface',
+    name: 'Martian Surface',
+    description: (s) =>
+      'Red dust stretches in every direction. Your wrecked ship leans behind you, and far off a ' +
+      'SANDSTORM is rolling closer. Half-buried in the sand is a brownish-red TRAPDOOR. ' +
+      (s.flags.trapdoorOpen ? 'The trapdoor stands open, a ladder leading DOWN.' : ''),
+    items: ['trapdoor'],
+    exits: {
+      in: 'cockpit',
+      back: 'cockpit',
+      down: { to: 'shaft', locked: (s) => !s.flags.trapdoorOpen,
+        lockedMsg: 'The trapdoor is shut tight. Maybe you can PRY it open.' },
+    },
+  },
+
+  shaft: {
+    id: 'shaft',
+    name: 'Airlock Shaft',
+    description:
+      'You climb down into a metal shaft. The storm howls above as the trapdoor thumps shut. ' +
+      'The air down here is warm and breathable — this base has working life support. ' +
+      'A doorway leads DOWN into the base.',
+    items: [],
+    exits: { up: 'surface', down: 'entryHall' },
+  },
+
+  entryHall: {
+    id: 'entryHall',
+    name: 'Base Entry Hall',
+    description: (s) =>
+      'An abandoned Martian base. Flickering MONITORS line the walls, covered in strange symbols. ' +
+      'A hallway runs NORTH to a control room. ' +
+      (s.flags.loggedIn
+        ? 'To the EAST a security door now stands unlocked.'
+        : 'To the EAST a heavy security door is sealed.'),
+    items: ['monitors'],
+    exits: {
+      up: 'shaft',
+      north: 'terminalRoom',
+      east: { to: 'corridor', locked: (s) => !s.flags.loggedIn,
+        lockedMsg: 'The security door is sealed. The main TERMINAL must be unlocked first.' },
+    },
+  },
+
+  terminalRoom: {
+    id: 'terminalRoom',
+    name: 'Control Room',
+    description:
+      'A glowing TERMINAL waits for a login. Beside it, four Martian symbols are scrambled on the screen. ' +
+      'An ETCHING is scratched into the wall.',
+    items: ['terminal', 'etching'],
+    exits: { south: 'entryHall' },
+  },
+
+  corridor: {
+    id: 'corridor',
+    name: 'Guard Corridor',
+    description: (s) =>
+      'A long corridor. A maintenance ALCOVE — just big enough to slip behind — opens to one side. ' +
+      (s.flags.hasAccessCode
+        ? 'The corridor is quiet now. A doorway leads NORTH to a vault.'
+        : 'A PATROL ALIEN is marching this way!'),
+    items: ['alcove', 'patrolAlien'],
+    exits: {
+      west: 'entryHall',
+      north: { to: 'vault', locked: (s) => !s.flags.hasAccessCode,
+        lockedMsg: 'The patrol alien blocks the way north. You need to get past it first.' },
+    },
+  },
+
+  vault: {
+    id: 'vault',
+    name: 'Vault Antechamber',
+    description: (s) =>
+      'A small room with a second VAULT TERMINAL and a thick STEEL DOOR. ' +
+      (s.flags.vaultOpen
+        ? 'The steel door has slid open. Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.'
+        : 'The steel door is locked. The terminal asks for an access code — try ENTER and your code.'),
+    items: ['vaultTerminal', 'steelDoor'],
+    exits: { south: 'corridor' },
+  },
+};
+
+const items = {
+  missionScreen: {
+    id: 'missionScreen', name: 'mission screen', aliases: ['screen', 'mission'], takeable: false,
+    description: 'A cracked dashboard screen.',
+    readText:
+      'MISSION LOG: Scans detected HOSTILE Martian lifeforms on the surface. ' +
+      'ABORT MISSION. Repair the shuttle and return to Earth immediately.',
+  },
+  sealant: {
+    id: 'sealant', name: 'sealant', aliases: ['patch', 'repair patch', 'tube'], takeable: true,
+    description: 'A tube of quick-drying visor sealant.',
+  },
+  wrench: {
+    id: 'wrench', name: 'wrench', aliases: ['pry bar', 'prybar', 'bar', 'pipe'], takeable: true,
+    description: 'A heavy wrench. Good for prying — or swinging.',
+  },
+  trapdoor: {
+    id: 'trapdoor', name: 'trapdoor', aliases: ['door', 'hatch'], takeable: false,
+    description: 'A brownish-red trapdoor, half-buried in red sand.',
+  },
+  monitors: {
+    id: 'monitors', name: 'monitors', aliases: ['monitor', 'screens'], takeable: false,
+    description: (s) => (s.flags.loggedIn
+      ? 'The monitors now read in English: maps and warnings about base patrols.'
+      : 'Wall monitors covered in scrambled Martian symbols.'),
+  },
+  terminal: {
+    id: 'terminal', name: 'terminal', aliases: ['computer', 'login'], takeable: false,
+    description: 'The main login terminal. It wants the four symbols in the right order.',
+  },
+  etching: {
+    id: 'etching', name: 'etching', aliases: ['wall', 'scratch', 'clue'], takeable: false,
+    description: 'Scratched words on the wall.',
+    readText: 'The etching reads: "The lock wakes in this order — SUN, STAR, BEAM, ROCK."',
+  },
+  alcove: {
+    id: 'alcove', name: 'alcove', aliases: ['crates', 'nook', 'cover'], takeable: false,
+    description: 'A shadowy maintenance alcove. Big enough to hide behind.',
+  },
+  patrolAlien: {
+    id: 'patrolAlien', name: 'patrol alien', aliases: ['alien', 'patrol', 'guard'], takeable: false,
+    description: 'A Martian patrol guard, clomping down the corridor.',
+  },
+  codeTablet: {
+    id: 'codeTablet', name: 'code tablet', aliases: ['tablet', 'codebook', 'book'], takeable: true,
+    description: 'A Martian tablet showing the vault access code: "blue 4".',
+  },
+  vaultTerminal: {
+    id: 'vaultTerminal', name: 'vault terminal', aliases: ['terminal', 'panel'], takeable: false,
+    description: 'A second terminal that controls the steel door.',
+  },
+  steelDoor: {
+    id: 'steelDoor', name: 'steel door', aliases: ['door'], takeable: false,
+    description: 'A thick steel vault door.',
+  },
+  crystal: {
+    id: 'crystal', name: 'crystal', aliases: ['radiant crystal', 'gem'], takeable: true,
+    description: 'A radiant crystal humming with power. It feels important.',
+  },
+  sharpTool: {
+    id: 'sharpTool', name: 'sharp tool', aliases: ['tool', 'blade'], takeable: true,
+    description: 'A sharp Martian tool, light and dangerous.',
+  },
+  vaultAlien: {
+    id: 'vaultAlien', name: 'vault alien', aliases: ['alien', 'guard'], takeable: false,
+    description: 'A second alien, eyeing the tool in your hand.',
+  },
+};
+
+function getRoom(id) {
+  return rooms[id];
+}
+
+function getItem(id) {
+  return items[id];
+}
+
+function nounVocab() {
+  const set = new Set();
+  for (const item of Object.values(items)) {
+    set.add(item.name);
+    for (const a of item.aliases || []) set.add(a);
+  }
+  // common scenery/verbs-as-nouns
+  ['visor', 'sand', 'symbols', 'code'].forEach((w) => set.add(w));
+  return [...set];
+}
+
+
+// ===== src/data/puzzles.js =====
+const SYMBOL_PUZZLE = {
+  // Displayed scrambled in the panel; clue (etching) gives the order.
+  symbols: [
+    { id: 'beam', glyph: '◈', label: 'BEAM' },
+    { id: 'star', glyph: '⟁', label: 'STAR' },
+    { id: 'sun', glyph: '☉', label: 'SUN' },
+    { id: 'rock', glyph: '⬡', label: 'ROCK' },
+  ],
+  correctOrder: ['sun', 'star', 'beam', 'rock'],
+};
+
+function checkSymbolOrder(attempt) {
+  const want = SYMBOL_PUZZLE.correctOrder;
+  if (!Array.isArray(attempt) || attempt.length !== want.length) return false;
+  return attempt.every((v, i) => v === want[i]);
+}
+
+
+// ===== src/engine/state.js =====
+function createInitialState() {
+  return {
+    room: 'cockpit',
+    inventory: [],
+    flags: {},
+    notes: [],
+    visited: ['cockpit'],
+    puzzles: { symbolLogin: { attempt: [] } },
+  };
+}
+
+function hasItem(state, id) {
+  return state.inventory.includes(id);
+}
+
+function addItem(state, id) {
+  if (!hasItem(state, id)) state.inventory.push(id);
+}
+
+function removeItem(state, id) {
+  state.inventory = state.inventory.filter((x) => x !== id);
+}
+
+function addNote(state, note) {
+  if (!state.notes.some((n) => n.title === note.title)) state.notes.push(note);
+}
+
+function visit(state, roomId) {
+  if (!state.visited.includes(roomId)) state.visited.push(roomId);
+}
+
+
+// ===== src/engine/parser.js =====
+const FILLER = new Set(['the', 'a', 'an', 'to', 'of', 'at', 'please', 'my', 'go']);
+
+const DIRECTIONS = {
+  n: 'north', s: 'south', e: 'east', w: 'west', u: 'up', d: 'down',
+  north: 'north', south: 'south', east: 'east', west: 'west',
+  up: 'up', down: 'down', out: 'out', in: 'in', back: 'back',
+};
+
+const VERB_ALIASES = {
+  l: 'look', look: 'look',
+  x: 'examine', examine: 'examine', inspect: 'examine',
+  get: 'take', take: 'take', grab: 'take', pick: 'take',
+  drop: 'drop',
+  use: 'use', read: 'read', open: 'open', close: 'close', pry: 'pry',
+  hide: 'hide', attack: 'attack', hit: 'attack', talk: 'talk',
+  i: 'inventory', inv: 'inventory', inventory: 'inventory',
+  notes: 'notes', help: 'help', '?': 'help',
+  enter: 'enter', login: 'enter', code: 'enter',
+};
+
+const VERB_VOCAB = Object.keys(VERB_ALIASES);
+
+function normalize(input) {
+  return String(input)
+    .toLowerCase()
+    .replace(/[^a-z0-9?\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokenize(input) {
+  const norm = normalize(input);
+  if (!norm) return [];
+  return norm.split(' ').filter((t) => t && !FILLER.has(t));
+}
+
+function levenshtein(a, b) {
+  const m = a.length;
+  const n = b.length;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+    }
+  }
+  return d[m][n];
+}
+
+function fuzzyMatch(token, vocab, max = 2) {
+  if (vocab.includes(token)) return token;
+  let best = null;
+  let bestDist = max + 1;
+  for (const word of vocab) {
+    const dist = levenshtein(token, word);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = word;
+    }
+  }
+  return bestDist <= max ? best : null;
+}
+
+// Match a (possibly multi-word) noun phrase against the noun vocabulary.
+function matchNoun(words, nounVocab) {
+  if (words.length === 0) return null;
+  const phrase = words.join(' ');
+  if (nounVocab.includes(phrase)) return phrase;
+  // try last two words, then last word, with fuzzy fallback on the last word
+  if (words.length >= 2) {
+    const two = words.slice(-2).join(' ');
+    if (nounVocab.includes(two)) return two;
+  }
+  const last = words[words.length - 1];
+  if (nounVocab.includes(last)) return last;
+  return fuzzyMatch(last, nounVocab, 2) || phrase;
+}
+
+function parse(input, nounVocab = []) {
+  const tokens = tokenize(input);
+  if (tokens.length === 0) return { verb: null };
+
+  const first = tokens[0];
+
+  // Bare direction (e.g. "n", "north") becomes a go command.
+  if (DIRECTIONS[first] && !VERB_ALIASES[first]) {
+    return { verb: 'go', noun: DIRECTIONS[first] };
+  }
+
+  let verb = VERB_ALIASES[first] || fuzzyMatch(first, VERB_VOCAB, 2);
+  let rest = tokens.slice(1);
+
+  // "go north" etc.
+  if (verb === 'go' || first === 'go') {
+    verb = 'go';
+    const dirToken = rest[0];
+    const dir = dirToken ? DIRECTIONS[dirToken] || fuzzyMatch(dirToken, Object.keys(DIRECTIONS), 2) : null;
+    return { verb: 'go', noun: dir };
+  }
+
+  if (!verb) return { verb: null, raw: input };
+
+  // enter: keep the raw word sequence (for code / symbol order)
+  if (verb === 'enter') {
+    return { verb, words: rest };
+  }
+
+  // split on prepositions
+  const prepIdx = rest.findIndex((t) => t === 'with' || t === 'on' || t === 'using');
+  let nounWords = rest;
+  let noun2Words = [];
+  let prep = null;
+  if (prepIdx !== -1) {
+    prep = rest[prepIdx];
+    nounWords = rest.slice(0, prepIdx);
+    noun2Words = rest.slice(prepIdx + 1);
+  }
+
+  const noun = matchNoun(nounWords, nounVocab);
+  const noun2 = noun2Words.length ? matchNoun(noun2Words, nounVocab) : undefined;
+  return { verb, noun: noun || undefined, noun2, prep: prep || undefined };
+}
+
+
+// ===== src/engine/commands.js =====
+
+
+
+function text(val, state) {
+  return typeof val === 'function' ? val(state) : val;
+}
+
+function exitTarget(exit) {
+  return typeof exit === 'string' ? exit : exit.to;
+}
+
+function exitLocked(exit, state) {
+  return typeof exit === 'object' && typeof exit.locked === 'function' && exit.locked(state);
+}
+
+function availableExits(state) {
+  const room = getRoom(state.room);
+  return Object.entries(room.exits || {})
+    .filter(([, exit]) => !exitLocked(exit, state))
+    .map(([dir]) => dir);
+}
+
+function describeRoom(state) {
+  const room = getRoom(state.room);
+  const desc = text(room.description, state);
+  const exits = availableExits(state);
+  const exitLine = exits.length ? `Exits: ${exits.join(', ')}.` : 'There are no obvious exits.';
+  return `**${room.name}**\n${desc}\n${exitLine}`;
+}
+
+// Resolve a noun to an item id, searching the room and inventory.
+function resolveItem(state, noun) {
+  if (!noun) return null;
+  const room = getRoom(state.room);
+  const candidates = [...(room.items || []), ...state.inventory];
+  for (const id of candidates) {
+    const item = getItem(id);
+    if (!item) continue;
+    if (item.name === noun || (item.aliases || []).includes(noun) || id.toLowerCase() === noun) {
+      return id;
+    }
+  }
+  // fall back to any defined item (for items revealed by flags, e.g. crystal)
+  for (const id of Object.keys(items)) {
+    const item = items[id];
+    if (item.name === noun || (item.aliases || []).includes(noun)) return id;
+  }
+  return null;
+}
+
+function cmdGo(state, dir) {
+  const room = getRoom(state.room);
+  const exit = (room.exits || {})[dir];
+  if (!exit) return `You can't go ${dir} from here.`;
+  if (exitLocked(exit, state)) {
+    return typeof exit === 'object' && exit.lockedMsg ? exit.lockedMsg : `You can't go ${dir} yet.`;
+  }
+  state.room = exitTarget(exit);
+  visit(state, state.room);
+  return describeRoom(state);
+}
+
+function cmdExamine(state, noun) {
+  const id = resolveItem(state, noun);
+  if (!id) return "You don't see that here.";
+  return text(getItem(id).description, state);
+}
+
+function cmdTake(state, noun) {
+  const id = resolveItem(state, noun);
+  if (!id) return "You don't see that here.";
+  const item = getItem(id);
+  if (!item.takeable) return `You can't take the ${item.name}.`;
+  if (hasItem(state, id)) return `You already have the ${item.name}.`;
+  const room = getRoom(state.room);
+  if (!(room.items || []).includes(id)) return "You don't see that here.";
+  room.items = room.items.filter((x) => x !== id);
+  addItem(state, id);
+  if (id === 'sharpTool') {
+    state.flags.slice1Complete = true;
+    return (
+      'You pick up the sharp tool. Heavy FOOTSTEPS echo behind you — a second alien enters, sees the tool ' +
+      'in your hand, and bares its teeth. Combat begins!\n\n' +
+      '*** To be continued in the next chapter... ***'
+    );
+  }
+  return `You take the ${item.name}.`;
+}
+
+function cmdDrop(state, noun) {
+  const id = resolveItem(state, noun);
+  if (!id || !hasItem(state, id)) return "You aren't carrying that.";
+  removeItem(state, id);
+  const room = getRoom(state.room);
+  room.items = room.items || [];
+  if (!room.items.includes(id)) room.items.push(id);
+  return `You drop the ${getItem(id).name}.`;
+}
+
+function cmdInventory(state) {
+  if (state.inventory.length === 0) return 'Your pack is empty.';
+  const names = state.inventory.map((id) => getItem(id).name);
+  return `You are carrying: ${names.join(', ')}.`;
+}
+
+function cmdRead(state, noun) {
+  const id = resolveItem(state, noun);
+  if (!id) return "You don't see that here.";
+  const item = getItem(id);
+  if (item.readText) return text(item.readText, state);
+  return `There's nothing to read on the ${item.name}.`;
+}
+
+function cmdUse(state, noun, noun2) {
+  const id = resolveItem(state, noun);
+  if (!id) return "You don't have that.";
+
+  // Seal the visor
+  if (id === 'sealant') {
+    if (state.flags.visorFixed) return 'Your visor is already sealed.';
+    state.flags.visorFixed = true;
+    if (!hasItem(state, 'sealant') && (getRoom(state.room).items || []).includes('sealant')) {
+      getRoom(state.room).items = getRoom(state.room).items.filter((x) => x !== 'sealant');
+    }
+    removeItem(state, 'sealant');
+    return 'You smear the sealant across your visor. It dries fast — the crack is sealed and the oxygen warning fades.';
+  }
+
+  // Use the wrench on the trapdoor == pry
+  if (id === 'wrench' && (noun2 === 'trapdoor' || noun2 === 'door')) {
+    return cmdPry(state, 'trapdoor');
+  }
+
+  return `You can't use the ${getItem(id).name} like that.`;
+}
+
+function cmdPry(state, noun) {
+  const id = resolveItem(state, noun);
+  if (id !== 'trapdoor') return "You can't pry that.";
+  if (state.flags.trapdoorOpen) return 'The trapdoor is already open.';
+  if (!hasItem(state, 'wrench')) {
+    return 'It won\'t budge by hand. You need something to pry with — like a wrench.';
+  }
+  state.flags.trapdoorOpen = true;
+  return 'You brush away the red sand and lever the wrench under the trapdoor. It groans open, revealing a ladder DOWN.';
+}
+
+// cmdEnter handles both the symbol login (terminalRoom) and the vault code (vault).
+function cmdEnter(state, words = []) {
+  if (state.room === 'terminalRoom') {
+    const known = new Set(SYMBOL_PUZZLE.symbols.map((s) => s.id));
+    const attempt = words.filter((w) => known.has(w));
+    if (state.flags.loggedIn) return 'You are already logged in.';
+    if (checkSymbolOrder(attempt)) {
+      state.flags.loggedIn = true;
+      return (
+        'The symbols light up in order and the terminal unlocks! The monitors flip to English. ' +
+        'A red message scrolls: "PATROL RETURNS IN 5 MINUTES." The security door to the EAST clicks open.'
+      );
+    }
+    return 'The symbols flash red — wrong order. Look for a clue in the room (try READ ETCHING).';
+  }
+
+  // vault handled in Task 10 (cmdEnter extended there)
+  return vaultEnter(state, words);
+}
+
+const VAULT_CODE = 'blue 4';
+
+// Placeholder until Task 10 fills it in; defined now to keep imports valid.
+function vaultEnter(state, words = []) {
+  if (state.room !== 'vault') return 'There is nothing to enter here.';
+  if (state.flags.vaultOpen) return 'The vault is already open.';
+  const attempt = words.join(' ').trim();
+  if (attempt === VAULT_CODE) {
+    state.flags.vaultOpen = true;
+    const room = getRoom('vault');
+    room.items = room.items || [];
+    if (!room.items.includes('crystal')) room.items.push('crystal');
+    if (!room.items.includes('sharpTool')) room.items.push('sharpTool');
+    return 'The terminal beeps green and the STEEL DOOR slides open! Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.';
+  }
+  return 'The terminal buzzes — wrong code. Check your NOTES for the access code.';
+}
+
+const ACCESS_CODE_NOTE = { title: 'Vault Access Code', text: 'blue 4' };
+
+function grantAccessCode(state) {
+  state.flags.hasAccessCode = true;
+  addNote(state, ACCESS_CODE_NOTE);
+}
+
+function cmdHide(state) {
+  if (state.room !== 'corridor') return 'There is nothing to hide from here.';
+  if (state.flags.hasAccessCode) return 'The corridor is quiet now.';
+  grantAccessCode(state);
+  return (
+    'You slip into the alcove and hold your breath. The patrol alien clomps past, taps a code into a ' +
+    'panel, and sets a CODE TABLET on the bench before leaving. You sneak out and read it: the access code is "blue 4". ' +
+    '(Saved to your NOTES.) The way NORTH is clear.'
+  );
+}
+
+function cmdAttack(state, noun, noun2) {
+  const target = resolveItem(state, noun);
+  const isAlien = target === 'patrolAlien' || target === 'vaultAlien' || noun === 'alien';
+
+  if (state.room === 'corridor' && !state.flags.hasAccessCode) {
+    if (!noun2 || !hasItem(state, resolveItem(state, noun2))) {
+      return 'You swing — but with empty hands the alien shoves you back. You need a weapon, like the WRENCH.';
+    }
+    grantAccessCode(state);
+    return (
+      'You bonk the patrol alien with the wrench and it crumples in a heap! You grab its CODE TABLET — ' +
+      'the access code is "blue 4". (Saved to your NOTES.) You win! The way NORTH is clear.'
+    );
+  }
+
+  if (!isAlien) return "There's nothing here to attack.";
+  return 'You take a swing, but nothing happens.';
+}
+
+function cmdTalk(state, noun) {
+  if (state.room === 'corridor' && !state.flags.hasAccessCode) {
+    return 'The alien squints at you, confused. It doesn\'t recognize you — better get OUT OF SIGHT (try HIDE) or be ready to fight!';
+  }
+  const id = resolveItem(state, noun);
+  if (!id) return 'There is no one here to talk to.';
+  return 'No response.';
+}
+
+
+// ===== src/engine/hints.js =====
+
+// Determine the current gate the player is working on, with escalating hints.
+function currentGate(state) {
+  if (!state.flags.visorFixed) {
+    return {
+      key: 'visor',
+      hints: [
+        'Your visor is cracked. Look around the cockpit for something to seal it.',
+        'Try TAKE SEALANT, then USE SEALANT.',
+        'Type: USE SEALANT — it patches your visor so you can go OUT.',
+      ],
+    };
+  }
+  if (!state.flags.trapdoorOpen) {
+    return {
+      key: 'trapdoor',
+      hints: [
+        'There is a trapdoor in the sand on the surface. You need something to pry it.',
+        'TAKE the WRENCH from the cockpit, go OUT, then PRY TRAPDOOR.',
+        'Use the WRENCH to pry open the TRAPDOOR and get underground.',
+      ],
+    };
+  }
+  if (!state.flags.loggedIn) {
+    return {
+      key: 'login',
+      hints: [
+        'Head DOWN into the base and find the control terminal.',
+        'The terminal needs four symbols in order. Find a clue in the room.',
+        'READ the ETCHING, then ENTER SUN STAR BEAM ROCK.',
+      ],
+    };
+  }
+  if (!state.flags.hasAccessCode) {
+    return {
+      key: 'patrol',
+      hints: [
+        'A patrol is coming through the EAST door. You need its access code.',
+        'You can HIDE in the alcove, or fight if you have a weapon. Talking is safe.',
+        'Type HIDE to sneak the code, or ATTACK ALIEN WITH WRENCH to fight.',
+      ],
+    };
+  }
+  if (!state.flags.vaultOpen) {
+    return {
+      key: 'vaultCode',
+      hints: [
+        'Go NORTH to the vault and use the terminal.',
+        'Check your NOTES for the access code.',
+        'Type: ENTER BLUE 4 at the vault terminal.',
+      ],
+    };
+  }
+  return {
+    key: 'cliffhanger',
+    hints: [
+      'Take the treasures in the vault.',
+      'TAKE the CRYSTAL, then TAKE the SHARP TOOL.',
+      'Grab the SHARP TOOL to see what happens next!',
+    ],
+  };
+}
+
+function getHint(state) {
+  if (!state._hint) state._hint = { gate: null, step: 0 };
+  const gate = currentGate(state);
+  if (state._hint.gate !== gate.key) {
+    state._hint.gate = gate.key;
+    state._hint.step = 0;
+  }
+  const idx = Math.min(state._hint.step, gate.hints.length - 1);
+  state._hint.step += 1;
+  return gate.hints[idx];
+}
+
+
+// ===== src/engine/save.js =====
+const KEY = 'marsMissionMayhem.slice1';
+
+function defaultStorage() {
+  return typeof localStorage !== 'undefined' ? localStorage : null;
+}
+
+function saveState(state, storage = defaultStorage()) {
+  if (!storage) return;
+  try {
+    storage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    /* storage full or unavailable — ignore, game still playable */
+  }
+}
+
+function loadState(storage = defaultStorage()) {
+  if (!storage) return null;
+  const raw = storage.getItem(KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearState(storage = defaultStorage()) {
+  if (!storage) return;
+  storage.removeItem(KEY);
+}
+
+
+// ===== src/engine/game.js =====
+
+
+
+
+
+
+const HELP_TEXT =
+  'Commands you can try: LOOK, EXAMINE <thing>, GO <direction> (or N/S/E/W/U/D), ' +
+  'TAKE <thing>, DROP <thing>, USE <thing>, READ <thing>, PRY <thing>, ' +
+  'HIDE, ATTACK <foe> WITH <thing>, TALK, ENTER <code>, INVENTORY (I), NOTES, HELP (?).';
+
+function createGame() {
+  const state = createInitialState();
+  const vocab = nounVocab();
+  const saved = loadState();
+  if (saved && saved.room) Object.assign(state, saved);
+
+  function notes() {
+    if (state.notes.length === 0) return 'Your notebook is empty so far.';
+    return 'NOTES:\n' + state.notes.map((n) => `• ${n.title}: ${n.text}`).join('\n');
+  }
+
+  function handle(input) {
+    const p = parse(input, vocab);
+    let out;
+    if (!p.verb) {
+      out = "I'm not sure what you mean. Type HELP or ? for ideas.";
+    } else {
+      out = dispatch(p);
+    }
+    saveState(state);
+    return out;
+  }
+
+  function dispatch(p) {
+    switch (p.verb) {
+      case 'look': return describeRoom(state);
+      case 'examine': return cmdExamine(state, p.noun);
+      case 'go': return p.noun ? cmdGo(state, p.noun) : 'Go where? Try N, S, E, W, UP or DOWN.';
+      case 'take': return cmdTake(state, p.noun);
+      case 'drop': return cmdDrop(state, p.noun);
+      case 'inventory': return cmdInventory(state);
+      case 'read': return cmdRead(state, p.noun);
+      case 'use': return cmdUse(state, p.noun, p.noun2);
+      case 'pry': return cmdPry(state, p.noun);
+      case 'open': return p.noun === 'trapdoor' ? cmdPry(state, 'trapdoor') : cmdUse(state, p.noun, p.noun2);
+      case 'enter': return cmdEnter(state, p.words || []);
+      case 'hide': return cmdHide(state);
+      case 'attack': return cmdAttack(state, p.noun, p.noun2);
+      case 'talk': return cmdTalk(state, p.noun);
+      case 'notes': return notes();
+      case 'help': return getHint(state) + '\n\n' + HELP_TEXT;
+      default: return "I don't know how to do that. Type HELP or ?.";
+    }
+  }
+
+  // initial room description
+  const intro = describeRoom(state);
+  return { state, handle, intro };
+}
+
+
+// ===== src/ui/render.js =====
+
+const MAP_LAYOUT = [
+  ['surface', 'shaft', ''],
+  ['cockpit', 'entryHall', 'terminalRoom'],
+  ['', 'corridor', 'vault'],
+];
+const ROOM_SHORT = {
+  cockpit: 'Cockpit', surface: 'Surface', shaft: 'Shaft', entryHall: 'Entry',
+  terminalRoom: 'Control', corridor: 'Corridor', vault: 'Vault',
+};
+
+function appendLine(textStr, cls = '') {
+  const el = document.getElementById('console');
+  const p = document.createElement('p');
+  if (cls) p.className = cls;
+  p.textContent = textStr;
+  el.appendChild(p);
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderMinimap(state) {
+  const map = document.getElementById('minimap');
+  map.innerHTML = '';
+  for (const row of MAP_LAYOUT) {
+    for (const id of row) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (!id) { cell.style.visibility = 'hidden'; cell.textContent = '.'; map.appendChild(cell); continue; }
+      cell.textContent = state.visited.includes(id) ? ROOM_SHORT[id] : '???';
+      if (state.visited.includes(id)) cell.classList.add('seen');
+      if (state.room === id) cell.classList.add('here');
+      map.appendChild(cell);
+    }
+  }
+}
+
+function renderExits(exits, onCommand) {
+  const box = document.getElementById('exits');
+  box.innerHTML = '<h3>Go</h3>';
+  for (const dir of exits) {
+    const b = document.createElement('button');
+    b.textContent = dir.toUpperCase();
+    b.onclick = () => onCommand(`go ${dir}`);
+    box.appendChild(b);
+  }
+}
+
+function renderObjects(state, onCommand) {
+  const box = document.getElementById('objects');
+  if (!box) return;
+  box.innerHTML = '<h3>Look at</h3>';
+  const room = getRoom(state.room);
+  for (const id of room.items || []) {
+    const b = document.createElement('button');
+    const { getItem } = window.__mmm || {};
+    const name = getItem ? getItem(id).name : id;
+    b.textContent = name;
+    b.onclick = () => onCommand(`examine ${name}`);
+    box.appendChild(b);
+  }
+}
+
+
+// ===== src/ui/panel.js =====
+
+function renderPanel(state, onCommand) {
+  const panel = document.getElementById('panel');
+  if (!panel) return;
+
+  if (state.room === 'terminalRoom' && !state.flags.loggedIn) {
+    renderSymbolPuzzle(panel, onCommand);
+    return;
+  }
+  renderDefault(panel, state);
+}
+
+function renderSymbolPuzzle(panel, onCommand) {
+  panel.innerHTML = '<h3>Martian Login</h3><p>Tap the symbols in the right order. Find the clue in the room!</p>';
+  const row = document.createElement('div');
+  row.className = 'symbols';
+  const picked = [];
+  SYMBOL_PUZZLE.symbols.forEach((sym) => {
+    const b = document.createElement('div');
+    b.className = 'symbol';
+    b.textContent = sym.glyph;
+    b.title = sym.label;
+    b.onclick = () => {
+      if (picked.includes(sym.id)) return;
+      picked.push(sym.id);
+      b.classList.add('picked');
+      if (picked.length === SYMBOL_PUZZLE.symbols.length) {
+        onCommand(`enter ${picked.join(' ')}`);
+      }
+    };
+    row.appendChild(b);
+  });
+  panel.appendChild(row);
+}
+
+function renderDefault(panel, state) {
+  panel.innerHTML = `<h3>Mission</h3><p>Explore the Martian base, get past the patrol, and reach the vault.</p>
+    <p style="color:var(--dim)">Room: ${state.room}</p>`;
+}
+
+
+// ===== src/ui/autocomplete.js =====
+function suggest(input, vocabulary, max = 5) {
+  const text = String(input).toLowerCase();
+  const lastSpace = text.lastIndexOf(' ');
+  const prefix = text.slice(lastSpace + 1);
+  if (!prefix) return [];
+  return vocabulary.filter((w) => w.startsWith(prefix) && w !== prefix).slice(0, max);
+}
+
+function applySuggestion(input, word) {
+  const lastSpace = input.lastIndexOf(' ');
+  return (lastSpace === -1 ? '' : input.slice(0, lastSpace + 1)) + word + ' ';
+}
+
+
+// ===== src/ui/main.js =====
+
+
+
+
+
+
+
+const VERBS = ['look', 'examine', 'go', 'take', 'drop', 'use', 'read', 'pry',
+  'hide', 'attack', 'talk', 'enter', 'inventory', 'notes', 'help', 'north', 'south', 'east', 'west', 'up', 'down'];
+
+function boot() {
+  // expose item lookup for render helpers (merge — do NOT clobber roomItems set below)
+  window.__mmm = Object.assign(window.__mmm || {}, { getItem });
+  const game = createGame();
+  const vocab = [...VERBS, ...nounVocab()];
+
+  const input = document.getElementById('input');
+  const suggestBox = document.getElementById('suggest');
+
+  function refresh() {
+    renderMinimap(game.state);
+    renderExits(availableExits(game.state), runCommand);
+    renderObjectsRow();
+    renderPanel(game.state, runCommand);
+  }
+
+  function renderObjectsRow() {
+    const box = document.getElementById('objects');
+    box.innerHTML = '<h3>Look at</h3>';
+    const ids = gameRoomItems();
+    for (const id of ids) {
+      const name = getItem(id).name;
+      const b = document.createElement('button');
+      b.textContent = name;
+      b.onclick = () => runCommand(`examine ${name}`);
+      box.appendChild(b);
+    }
+  }
+  function gameRoomItems() {
+    return window.__mmm.roomItems ? window.__mmm.roomItems(game.state.room) : [];
+  }
+
+  function runCommand(cmd) {
+    appendLine(`> ${cmd}`, 'you');
+    const out = game.handle(cmd);
+    appendLine(out);
+    refresh();
+    input.value = '';
+    hideSuggest();
+  }
+
+  function hideSuggest() { suggestBox.style.display = 'none'; }
+
+  input.addEventListener('input', () => {
+    const matches = suggest(input.value, vocab);
+    if (matches.length === 0) return hideSuggest();
+    suggestBox.innerHTML = '';
+    matches.forEach((w) => {
+      const d = document.createElement('div');
+      d.textContent = w;
+      d.onclick = () => { input.value = applySuggestion(input.value, w); input.focus(); hideSuggest(); };
+      suggestBox.appendChild(d);
+    });
+    suggestBox.style.display = 'block';
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && input.value.trim()) runCommand(input.value.trim());
+    if (e.key === 'Escape') hideSuggest();
+  });
+
+  document.getElementById('input-go').onclick = () => input.value.trim() && runCommand(input.value.trim());
+  document.getElementById('help-btn').onclick = () => runCommand('help');
+  document.getElementById('restart-btn').onclick = () => {
+    if (confirm('Start over from the crash?')) { clearState(); location.reload(); }
+  };
+
+  appendLine(game.intro, 'room');
+  refresh();
+  input.focus();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+
+// helper exposed for render: list current room items
+
+window.__mmm = window.__mmm || {};
+window.__mmm.roomItems = (id) => (rooms[id] && rooms[id].items) || [];
+</script>
+</body>
+</html>
