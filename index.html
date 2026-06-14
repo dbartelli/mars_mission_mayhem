@@ -96,14 +96,17 @@ const rooms = {
     id: 'cockpit',
     name: 'Crashed Cockpit',
     description: (s) =>
-      'You wake in the wreck of your spaceship. You are the only survivor of the crash. ' +
-      'A red OXYGEN LOW warning blinks, and a crack runs across your helmet visor. ' +
-      'A MISSION SCREEN flickers on the dashboard — it looks important. ' +
-      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER. ' +
+      (s.flags.cockpitIntroSeen
+        ? 'You are back in the wrecked cockpit. '
+        : 'You wake in the wreck of your spaceship. You are the only survivor of the crash. ') +
+      (s.flags.visorFixed
+        ? 'Your visor is patched and holding. '
+        : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +
+      'A MISSION SCREEN flickers on the dashboard. ' +
+      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER' +
       (s.flags.lockerOpen
-        ? 'The locker hangs open — you can see SUPER GLUE, a WRENCH, and a FIRST AID KIT inside.'
-        : 'The locker is shut.') +
-      (s.flags.visorFixed ? ' Your visor is patched and holding.' : ''),
+        ? ' (open — SUPER GLUE, WRENCH, and FIRST AID KIT inside).'
+        : ' (shut).'),
     items: ['missionScreen', 'locker'],
     exits: {
       out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
@@ -867,7 +870,7 @@ function createGame() {
 
   function dispatch(p) {
     switch (p.verb) {
-      case 'look': return describeRoom(state);
+      case 'look': return p.noun ? cmdExamine(state, p.noun) : describeRoom(state);
       case 'examine': return cmdExamine(state, p.noun);
       case 'go': return p.noun ? cmdGo(state, p.noun) : 'Go where? Try N, S, E, W, UP or DOWN.';
       case 'take': return cmdTake(state, p.noun);
@@ -887,8 +890,9 @@ function createGame() {
     }
   }
 
-  // initial room description
+  // initial room description; flag prevents repeating the wake-up intro on subsequent LOOKs
   const intro = describeRoom(state);
+  state.flags.cockpitIntroSeen = true;
   return { state, handle, intro };
 }
 

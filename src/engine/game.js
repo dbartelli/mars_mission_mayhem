@@ -38,7 +38,7 @@ export function createGame() {
 
   function dispatch(p) {
     switch (p.verb) {
-      case 'look': return describeRoom(state);
+      case 'look': return p.noun ? cmdExamine(state, p.noun) : describeRoom(state);
       case 'examine': return cmdExamine(state, p.noun);
       case 'go': return p.noun ? cmdGo(state, p.noun) : 'Go where? Try N, S, E, W, UP or DOWN.';
       case 'take': return cmdTake(state, p.noun);
@@ -58,7 +58,8 @@ export function createGame() {
     }
   }
 
-  // initial room description
+  // initial room description; flag prevents repeating the wake-up intro on subsequent LOOKs
   const intro = describeRoom(state);
+  state.flags.cockpitIntroSeen = true;
   return { state, handle, intro };
 }

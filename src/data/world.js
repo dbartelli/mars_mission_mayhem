@@ -5,14 +5,17 @@ export const rooms = {
     id: 'cockpit',
     name: 'Crashed Cockpit',
     description: (s) =>
-      'You wake in the wreck of your spaceship. You are the only survivor of the crash. ' +
-      'A red OXYGEN LOW warning blinks, and a crack runs across your helmet visor. ' +
-      'A MISSION SCREEN flickers on the dashboard — it looks important. ' +
-      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER. ' +
+      (s.flags.cockpitIntroSeen
+        ? 'You are back in the wrecked cockpit. '
+        : 'You wake in the wreck of your spaceship. You are the only survivor of the crash. ') +
+      (s.flags.visorFixed
+        ? 'Your visor is patched and holding. '
+        : 'A red OXYGEN LOW warning blinks — your helmet visor is cracked. ') +
+      'A MISSION SCREEN flickers on the dashboard. ' +
+      'An EXIT HATCH leads outside. Along the wall is a STORAGE LOCKER' +
       (s.flags.lockerOpen
-        ? 'The locker hangs open — you can see SUPER GLUE, a WRENCH, and a FIRST AID KIT inside.'
-        : 'The locker is shut.') +
-      (s.flags.visorFixed ? ' Your visor is patched and holding.' : ''),
+        ? ' (open — SUPER GLUE, WRENCH, and FIRST AID KIT inside).'
+        : ' (shut).'),
     items: ['missionScreen', 'locker'],
     exits: {
       out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
