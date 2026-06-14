@@ -57,4 +57,18 @@ describe('full slice-1 walkthrough', () => {
     const game = createGame();
     expect(game.handle('xyzzy').toLowerCase()).toMatch(/don't|not sure|try/);
   });
+
+  it('open hatch in cockpit exits when visor is fixed', () => {
+    const game = createGame();
+    game.state.flags.visorFixed = true;
+    game.handle('open hatch');
+    expect(game.state.room).toBe('surface');
+  });
+
+  it('open hatch in cockpit blocked by oxygen warning when visor not fixed', () => {
+    const game = createGame();
+    const out = game.handle('open hatch');
+    expect(out.toLowerCase()).toContain('oxygen');
+    expect(game.state.room).toBe('cockpit');
+  });
 });
