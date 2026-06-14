@@ -121,9 +121,17 @@ export const items = {
   },
   locker: {
     id: 'locker', name: 'storage locker', aliases: ['locker', 'cabinet', 'storage'], takeable: false,
-    description: (s) => s.flags.lockerOpen
-      ? 'An open storage locker. Inside you see SUPER GLUE, a WRENCH, and a FIRST AID KIT.'
-      : 'A wall-mounted storage locker, shut but not locked.',
+    description: (s) => {
+      if (!s.flags.lockerOpen) return 'A wall-mounted storage locker, shut but not locked.';
+      const r = rooms.cockpit;
+      const inside = [];
+      if ((r.items || []).includes('sealant')) inside.push('SUPER GLUE');
+      if ((r.items || []).includes('wrench')) inside.push('WRENCH');
+      if ((r.items || []).includes('firstAidKit')) inside.push('FIRST AID KIT');
+      return inside.length
+        ? `An open storage locker. Inside you see ${inside.join(', ')}.`
+        : 'An open storage locker. It is empty.';
+    },
   },
   sealant: {
     id: 'sealant', name: 'super glue', aliases: ['glue', 'tube', 'sealant', 'super'], takeable: true,
