@@ -1,0 +1,189 @@
+// All slice-1 rooms and items as plain data. Logic lives in the engine.
+
+export const rooms = {
+  cockpit: {
+    id: 'cockpit',
+    name: 'Crashed Cockpit',
+    description: (s) =>
+      'You wake in the wreck of your spaceship. You are the only survivor of the crash. ' +
+      'A red OXYGEN LOW warning blinks, and a crack runs across your helmet visor. ' +
+      'A MISSION SCREEN flickers on the dashboard. ' +
+      (s.flags.visorFixed ? 'Your visor is patched and holding.' : 'You need to seal that crack.'),
+    items: ['missionScreen', 'sealant', 'wrench'],
+    exits: {
+      out: { to: 'surface', locked: (s) => !s.flags.visorFixed,
+        lockedMsg: 'Not yet — the dust outside would pour through your cracked visor. Seal it first.' },
+    },
+  },
+
+  surface: {
+    id: 'surface',
+    name: 'Martian Surface',
+    description: (s) =>
+      'Red dust stretches in every direction. Your wrecked ship leans behind you, and far off a ' +
+      'SANDSTORM is rolling closer. Half-buried in the sand is a brownish-red TRAPDOOR. ' +
+      (s.flags.trapdoorOpen ? 'The trapdoor stands open, a ladder leading DOWN.' : ''),
+    items: ['trapdoor'],
+    exits: {
+      in: 'cockpit',
+      back: 'cockpit',
+      down: { to: 'shaft', locked: (s) => !s.flags.trapdoorOpen,
+        lockedMsg: 'The trapdoor is shut tight. Maybe you can PRY it open.' },
+    },
+  },
+
+  shaft: {
+    id: 'shaft',
+    name: 'Airlock Shaft',
+    description:
+      'You climb down into a metal shaft. The storm howls above as the trapdoor thumps shut. ' +
+      'The air down here is warm and breathable — this base has working life support. ' +
+      'A doorway leads DOWN into the base.',
+    items: [],
+    exits: { up: 'surface', down: 'entryHall' },
+  },
+
+  entryHall: {
+    id: 'entryHall',
+    name: 'Base Entry Hall',
+    description: (s) =>
+      'An abandoned Martian base. Flickering MONITORS line the walls, covered in strange symbols. ' +
+      'A hallway runs NORTH to a control room. ' +
+      (s.flags.loggedIn
+        ? 'To the EAST a security door now stands unlocked.'
+        : 'To the EAST a heavy security door is sealed.'),
+    items: ['monitors'],
+    exits: {
+      up: 'shaft',
+      north: 'terminalRoom',
+      east: { to: 'corridor', locked: (s) => !s.flags.loggedIn,
+        lockedMsg: 'The security door is sealed. The main TERMINAL must be unlocked first.' },
+    },
+  },
+
+  terminalRoom: {
+    id: 'terminalRoom',
+    name: 'Control Room',
+    description:
+      'A glowing TERMINAL waits for a login. Beside it, four Martian symbols are scrambled on the screen. ' +
+      'An ETCHING is scratched into the wall.',
+    items: ['terminal', 'etching'],
+    exits: { south: 'entryHall' },
+  },
+
+  corridor: {
+    id: 'corridor',
+    name: 'Guard Corridor',
+    description: (s) =>
+      'A long corridor. A maintenance ALCOVE — just big enough to slip behind — opens to one side. ' +
+      (s.flags.hasAccessCode
+        ? 'The corridor is quiet now. A doorway leads NORTH to a vault.'
+        : 'A PATROL ALIEN is marching this way!'),
+    items: ['alcove', 'patrolAlien'],
+    exits: {
+      west: 'entryHall',
+      north: { to: 'vault', locked: (s) => !s.flags.hasAccessCode,
+        lockedMsg: 'The patrol alien blocks the way north. You need to get past it first.' },
+    },
+  },
+
+  vault: {
+    id: 'vault',
+    name: 'Vault Antechamber',
+    description: (s) =>
+      'A small room with a second VAULT TERMINAL and a thick STEEL DOOR. ' +
+      (s.flags.vaultOpen
+        ? 'The steel door has slid open. Inside, a radiant CRYSTAL glows, and a SHARP TOOL lies in the corner.'
+        : 'The steel door is locked. The terminal asks for an access code — try ENTER and your code.'),
+    items: ['vaultTerminal', 'steelDoor'],
+    exits: { south: 'corridor' },
+  },
+};
+
+export const items = {
+  missionScreen: {
+    id: 'missionScreen', name: 'mission screen', aliases: ['screen', 'mission'], takeable: false,
+    description: 'A cracked dashboard screen.',
+    readText:
+      'MISSION LOG: Scans detected HOSTILE Martian lifeforms on the surface. ' +
+      'ABORT MISSION. Repair the shuttle and return to Earth immediately.',
+  },
+  sealant: {
+    id: 'sealant', name: 'sealant', aliases: ['patch', 'repair patch', 'tube'], takeable: true,
+    description: 'A tube of quick-drying visor sealant.',
+  },
+  wrench: {
+    id: 'wrench', name: 'wrench', aliases: ['pry bar', 'prybar', 'bar', 'pipe'], takeable: true,
+    description: 'A heavy wrench. Good for prying — or swinging.',
+  },
+  trapdoor: {
+    id: 'trapdoor', name: 'trapdoor', aliases: ['door', 'hatch'], takeable: false,
+    description: 'A brownish-red trapdoor, half-buried in red sand.',
+  },
+  monitors: {
+    id: 'monitors', name: 'monitors', aliases: ['monitor', 'screens'], takeable: false,
+    description: (s) => (s.flags.loggedIn
+      ? 'The monitors now read in English: maps and warnings about base patrols.'
+      : 'Wall monitors covered in scrambled Martian symbols.'),
+  },
+  terminal: {
+    id: 'terminal', name: 'terminal', aliases: ['computer', 'login'], takeable: false,
+    description: 'The main login terminal. It wants the four symbols in the right order.',
+  },
+  etching: {
+    id: 'etching', name: 'etching', aliases: ['wall', 'scratch', 'clue'], takeable: false,
+    description: 'Scratched words on the wall.',
+    readText: 'The etching reads: "The lock wakes in this order — SUN, STAR, BEAM, ROCK."',
+  },
+  alcove: {
+    id: 'alcove', name: 'alcove', aliases: ['crates', 'nook', 'cover'], takeable: false,
+    description: 'A shadowy maintenance alcove. Big enough to hide behind.',
+  },
+  patrolAlien: {
+    id: 'patrolAlien', name: 'patrol alien', aliases: ['alien', 'patrol', 'guard'], takeable: false,
+    description: 'A Martian patrol guard, clomping down the corridor.',
+  },
+  codeTablet: {
+    id: 'codeTablet', name: 'code tablet', aliases: ['tablet', 'codebook', 'book'], takeable: true,
+    description: 'A Martian tablet showing the vault access code: "blue 4".',
+  },
+  vaultTerminal: {
+    id: 'vaultTerminal', name: 'vault terminal', aliases: ['terminal', 'panel'], takeable: false,
+    description: 'A second terminal that controls the steel door.',
+  },
+  steelDoor: {
+    id: 'steelDoor', name: 'steel door', aliases: ['door'], takeable: false,
+    description: 'A thick steel vault door.',
+  },
+  crystal: {
+    id: 'crystal', name: 'crystal', aliases: ['radiant crystal', 'gem'], takeable: true,
+    description: 'A radiant crystal humming with power. It feels important.',
+  },
+  sharpTool: {
+    id: 'sharpTool', name: 'sharp tool', aliases: ['tool', 'blade'], takeable: true,
+    description: 'A sharp Martian tool, light and dangerous.',
+  },
+  vaultAlien: {
+    id: 'vaultAlien', name: 'vault alien', aliases: ['alien', 'guard'], takeable: false,
+    description: 'A second alien, eyeing the tool in your hand.',
+  },
+};
+
+export function getRoom(id) {
+  return rooms[id];
+}
+
+export function getItem(id) {
+  return items[id];
+}
+
+export function nounVocab() {
+  const set = new Set();
+  for (const item of Object.values(items)) {
+    set.add(item.name);
+    for (const a of item.aliases || []) set.add(a);
+  }
+  // common scenery/verbs-as-nouns
+  ['visor', 'sand', 'symbols', 'code'].forEach((w) => set.add(w));
+  return [...set];
+}
